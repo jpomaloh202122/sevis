@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string, role: 'user' | 'admin') => Promise<boolean>
-  loginWithUser: (userData: User) => Promise<boolean>
+  loginWithUser: (userData: any) => Promise<boolean>
   logout: () => void
   isLoading: boolean
 }
