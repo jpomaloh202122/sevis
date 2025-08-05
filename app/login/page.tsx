@@ -7,13 +7,14 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useAuth } from '@/contexts/AuthContext'
+import { userService } from '@/lib/database'
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'user' | 'admin'>('user')
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const { login } = useAuth()
+  const { login, loginWithUser } = useAuth()
   const router = useRouter()
   
   const [formData, setFormData] = useState({
@@ -28,18 +29,38 @@ export default function LoginPage() {
     setError('')
     
     try {
-      const success = await login(formData.email, formData.password, activeTab)
-      if (success) {
-        // Redirect based on role
-        if (activeTab === 'admin') {
+      // For demo purposes, still use the mock login for admin
+      if (activeTab === 'admin') {
+        const success = await login(formData.email, formData.password, activeTab)
+        if (success) {
           router.push('/admin')
         } else {
-          router.push('/dashboard')
+          setError('Invalid admin credentials. Please try again.')
         }
       } else {
-        setError('Invalid credentials. Please try again.')
+        // For regular users, try to find in database first
+        const { data: dbUser, error } = await userService.getUserByEmail(formData.email)
+        
+        if (error || !dbUser) {
+          // If user not found in database, check if it's the demo user
+          if (formData.email === 'user@example.com' && formData.password === 'pawword') {
+            // Demo user login
+            await login(formData.email, formData.password, 'user')
+            router.push('/dashboard')
+            return
+          } else {
+            setError('User not found. Please check your email or register.')
+            return
+          }
+        }
+
+        // User found in database - for demo purposes, accept any password
+        // In production, you would hash and compare passwords properly
+        await loginWithUser(dbUser)
+        router.push('/dashboard')
       }
     } catch (error) {
+      console.error('Login error:', error)
       setError('An error occurred. Please try again.')
     } finally {
       setIsSubmitting(false)

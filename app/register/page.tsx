@@ -3,12 +3,19 @@
 import { useState } from 'react'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import { userService } from '@/lib/database'
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const router = useRouter()
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -20,10 +27,92 @@ export default function RegisterPage() {
     agreeToTerms: false
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return false
+    }
+
+    // Check password strength
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return false
+    }
+
+    // Check if terms are agreed to
+    if (!formData.agreeToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy')
+      return false
+    }
+
+    // Check if all required fields are filled
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.nationalId) {
+      setError('All fields are required')
+      return false
+    }
+
+    return true
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle registration logic here
-    console.log('Registration attempt:', formData)
+    setError('')
+    setSuccess('')
+
+    if (!validateForm()) {
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Create user data for database
+      const userData = {
+        email: formData.email,
+        name: `${formData.firstName} ${formData.lastName}`,
+        role: 'user' as const,
+        national_id: formData.nationalId,
+        phone: formData.phone
+      }
+
+      // Register user in database
+      const { data: user, error } = await userService.createUser(userData)
+
+      if (error) {
+        if (error.message.includes('duplicate key')) {
+          setError('An account with this email already exists')
+        } else {
+          setError('Registration failed. Please try again.')
+        }
+        return
+      }
+
+      setSuccess('Account created successfully! Redirecting to login...')
+      
+      // Clear form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        nationalId: '',
+        password: '',
+        confirmPassword: '',
+        agreeToTerms: false
+      })
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        router.push('/login')
+      }, 2000)
+
+    } catch (err) {
+      console.error('Registration error:', err)
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,6 +139,20 @@ export default function RegisterPage() {
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <p className="text-sm text-green-600">{success}</p>
+              </div>
+            )}
+
             <div className="space-y-4">
               {/* Name Fields */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -243,9 +346,10 @@ export default function RegisterPage() {
             <div>
               <button
                 type="submit"
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-png-red py-2 px-4 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-png-red focus:ring-offset-2"
+                disabled={isSubmitting}
+                className="group relative flex w-full justify-center rounded-md border border-transparent bg-png-red py-2 px-4 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-png-red focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Account
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
 

@@ -14,6 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string, role: 'user' | 'admin') => Promise<boolean>
+  loginWithUser: (userData: User) => Promise<boolean>
   logout: () => void
   isLoading: boolean
 }
@@ -86,13 +87,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const loginWithUser = async (userData: User): Promise<boolean> => {
+    setIsLoading(true)
+    
+    try {
+      // Convert database user format to our User interface
+      const user: User = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        nationalId: userData.national_id || '',
+        phone: userData.phone
+      }
+      
+      setUser(user)
+      localStorage.setItem('sevis_user', JSON.stringify(user))
+      return true
+    } catch (error) {
+      console.error('Login with user failed:', error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const logout = () => {
     setUser(null)
     localStorage.removeItem('sevis_user')
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginWithUser, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   )
