@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const loginWithUser = async (userData: User): Promise<boolean> => {
+  const loginWithUser = async (userData: any): Promise<boolean> => {
     setIsLoading(true)
     
     try {
