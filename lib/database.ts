@@ -103,6 +103,80 @@ export const userService = {
       .single()
     
     return { data, error }
+  },
+
+  // SMS verification methods
+  async createSMSVerification(phoneNumber: string, verificationCode: string) {
+    const expiresAt = new Date()
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10) // 10 minutes expiry
+    
+    const { data, error } = await supabase
+      .from('sms_verifications')
+      .insert([{ 
+        phone_number: phoneNumber, 
+        verification_code: verificationCode,
+        expires_at: expiresAt.toISOString()
+      }])
+      .select()
+      .single()
+    
+    return { data, error }
+  },
+
+  async getSMSVerification(phoneNumber: string, verificationCode: string) {
+    const { data, error } = await supabase
+      .from('sms_verifications')
+      .select('*')
+      .eq('phone_number', phoneNumber)
+      .eq('verification_code', verificationCode)
+      .eq('is_used', false)
+      .gt('expires_at', new Date().toISOString())
+      .single()
+    
+    return { data, error }
+  },
+
+  async markSMSVerificationUsed(phoneNumber: string, verificationCode: string) {
+    const { data, error } = await supabase
+      .from('sms_verifications')
+      .update({ is_used: true })
+      .eq('phone_number', phoneNumber)
+      .eq('verification_code', verificationCode)
+      .select()
+      .single()
+    
+    return { data, error }
+  },
+
+  async verifyUserPhone(phone: string) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ 
+        phone_verified: true,
+        phone_verified_at: new Date().toISOString()
+      })
+      .eq('phone', phone)
+      .select()
+      .single()
+    
+    return { data, error }
+  },
+
+  // Get user by phone number
+  async getUserByPhone(phone: string) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single()
+    
+    return { data, error }
+  }
+      .eq('email', email)
+      .select()
+      .single()
+    
+    return { data, error }
   }
 }
 

@@ -26,6 +26,10 @@ yarn-error.log*
 .env*.local
 .env
 
+# Test files
+test-smtp.js
+test-twilio.js
+
 # Vercel
 .vercel
 

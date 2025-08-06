@@ -15,6 +15,11 @@ export function generatePasswordResetToken(): string {
   return generateSecureToken(32)
 }
 
+// Generate SMS verification code (6 digits)
+export function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
 // Validate email format
 export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

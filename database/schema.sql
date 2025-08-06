@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(20) NOT NULL,
     email_verified BOOLEAN DEFAULT false,
     email_verified_at TIMESTAMP WITH TIME ZONE,
+    phone_verified BOOLEAN DEFAULT false,
+    phone_verified_at TIMESTAMP WITH TIME ZONE,
+    verification_method VARCHAR(20) DEFAULT 'email' CHECK (verification_method IN ('email', 'sms')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -24,6 +27,16 @@ CREATE TABLE IF NOT EXISTS email_verifications (
     email VARCHAR(255) NOT NULL,
     token VARCHAR(255) UNIQUE NOT NULL,
     is_used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- SMS verifications table
+CREATE TABLE IF NOT EXISTS sms_verifications (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    phone_number VARCHAR(20) NOT NULL,
+    verification_code VARCHAR(6) NOT NULL,
+    is_used BOOLEAN DEFAULT false,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -64,11 +77,14 @@ CREATE TABLE IF NOT EXISTS applications (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications(submitted_at);
 CREATE INDEX IF NOT EXISTS idx_services_category ON services(category);
 CREATE INDEX IF NOT EXISTS idx_services_active ON services(is_active);
+CREATE INDEX IF NOT EXISTS idx_sms_verifications_phone ON sms_verifications(phone_number);
+CREATE INDEX IF NOT EXISTS idx_sms_verifications_code ON sms_verifications(verification_code);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -99,49 +115,52 @@ INSERT INTO services (name, category, description, requirements, processing_time
 ('Police Clearance', 'Public Safety', 'Obtain police clearance certificate', ARRAY['National ID', 'Fingerprint form'], '5-7 business days', 75.00, true),
 ('Import License', 'Business & Commerce', 'Apply for import business license', ARRAY['Business registration', 'Tax clearance', 'Bank guarantee'], '10-15 business days', 800.00, true);
 
--- Insert demo users (you can modify these)
-INSERT INTO users (email, name, role, national_id, phone) VALUES
-('admin@sevis.gov.pg', 'Admin User', 'admin', 'ADMIN001', '+675 123 4567'),
-('user@example.com', 'John Doe', 'user', 'PNG123456789', '+675 987 6543');
+-- Insert demo users (password: "pawword")
+INSERT INTO users (email, name, role, national_id, phone, email_verified, phone_verified, verification_method) VALUES
+('admin@sevis.gov.pg', 'Admin User', 'admin', 'ADMIN001', '+67512345678', true, true, 'email'),
+('user@example.com', 'Demo User', 'user', 'USER001', '+67587654321', true, true, 'email');
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_verifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sms_verifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
--- Users can only see their own data
+-- Users can read their own data
 CREATE POLICY "Users can view own profile" ON users
-    FOR SELECT USING (auth.uid()::text = id::text);
+    FOR SELECT USING (auth.uid() = id);
 
+-- Users can update their own data
 CREATE POLICY "Users can update own profile" ON users
-    FOR UPDATE USING (auth.uid()::text = id::text);
+    FOR UPDATE USING (auth.uid() = id);
 
--- Services are public (read-only)
-CREATE POLICY "Services are viewable by everyone" ON services
+-- Anyone can create a user (for registration)
+CREATE POLICY "Anyone can create users" ON users
+    FOR INSERT WITH CHECK (true);
+
+-- Services are public
+CREATE POLICY "Services are public" ON services
     FOR SELECT USING (true);
 
--- Applications policies
+-- Users can view their own applications
 CREATE POLICY "Users can view own applications" ON applications
-    FOR SELECT USING (auth.uid()::text = user_id::text);
+    FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can create own applications" ON applications
-    FOR INSERT WITH CHECK (auth.uid()::text = user_id::text);
+-- Users can create applications
+CREATE POLICY "Users can create applications" ON applications
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Admins can view all applications" ON applications
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE users.id::text = auth.uid()::text 
-            AND users.role = 'admin'
-        )
-    );
+-- Email verifications are public (for verification process)
+CREATE POLICY "Email verifications are public" ON email_verifications
+    FOR ALL USING (true);
 
-CREATE POLICY "Admins can update applications" ON applications
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE users.id::text = auth.uid()::text 
-            AND users.role = 'admin'
-        )
-    ); 
+-- SMS verifications are public (for verification process)
+CREATE POLICY "SMS verifications are public" ON sms_verifications
+    FOR ALL USING (true);
+
+-- Password reset tokens are public (for reset process)
+CREATE POLICY "Password reset tokens are public" ON password_reset_tokens
+    FOR ALL USING (true); 
