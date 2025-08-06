@@ -172,12 +172,6 @@ export const userService = {
     
     return { data, error }
   }
-      .eq('email', email)
-      .select()
-      .single()
-    
-    return { data, error }
-  }
 }
 
 // Application operations

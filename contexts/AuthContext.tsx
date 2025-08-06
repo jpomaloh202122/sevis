@@ -38,47 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     
     try {
-      // Mock authentication - in real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Predefined dummy accounts
-      const dummyAccounts = {
-        admin: {
-          email: 'admin@sevis.gov.pg',
-          password: 'pawword',
-          user: {
-            id: 'admin-1',
-            name: 'Admin User',
-            email: 'admin@sevis.gov.pg',
-            role: 'admin' as const,
-            nationalId: 'ADMIN001',
-            phone: '+675 123 4567'
-          }
-        },
-        user: {
-          email: 'user@example.com',
-          password: 'pawword',
-          user: {
-            id: 'user-1',
-            name: 'John Doe',
-            email: 'user@example.com',
-            role: 'user' as const,
-            nationalId: 'PNG123456789',
-            phone: '+675 987 6543'
-          }
-        }
-      }
-      
-      // Check credentials based on role
-      const account = role === 'admin' ? dummyAccounts.admin : dummyAccounts.user
-      
-      if (email === account.email && password === account.password) {
-        setUser(account.user)
-        localStorage.setItem('sevis_user', JSON.stringify(account.user))
-        return true
-      } else {
-        return false
-      }
+      // This function is now deprecated - use loginWithUser instead
+      // All authentication should go through the database
+      console.warn('Direct login method is deprecated. Use database authentication instead.')
+      return false
     } catch (error) {
       console.error('Login failed:', error)
       return false

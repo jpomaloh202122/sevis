@@ -1,34 +1,23 @@
-# Email Verification Setup Guide
+# Nodemailer Email Verification Setup Guide
 
 ## Overview
 
-The SEVIS PORTAL includes email verification functionality for user registration using **Nodemailer**. The system sends real emails with professional HTML templates for user verification.
+The SEVIS PORTAL now uses Nodemailer for sending email verification during user registration. This guide will help you configure the email service for both development and production environments.
 
-## Current Implementation (Nodemailer)
+## Features Implemented
 
-The email verification system uses Nodemailer for sending real emails:
+### ✅ Email Verification Flow
+- **Registration**: Creates verification token in database
+- **Email Sending**: Sends professional HTML emails via Nodemailer
+- **Verification**: Users click link to verify email
+- **Welcome Email**: Sends welcome email after successful verification
+- **Password Reset**: Supports password reset via email
 
-- ✅ **Real Email Sending**: Sends actual emails via SMTP
-- ✅ **Professional Templates**: Beautiful HTML email templates
-- ✅ **Verification Links**: Secure verification URLs
-- ✅ **Database Integration**: Verification tokens stored in database
-- ✅ **Multiple Providers**: Supports Gmail, Outlook, Yahoo, custom SMTP
-
-## Nodemailer Features
-
-### Email Verification Flow
-1. **User Registration**: Creates verification token in database
-2. **Email Sending**: Sends professional HTML email via SMTP
-3. **Verification Link**: Secure URL with token validation
-4. **Database Updates**: User verification status updated
-5. **Welcome Email**: Sends welcome email after verification
-
-### Email Template Features
+### ✅ Email Templates
 - **Professional Design**: PNG government theme (black, gold, red)
 - **Responsive HTML**: Works on all email clients
 - **Clear Call-to-Action**: Prominent verification buttons
 - **Fallback Links**: Text links if buttons don't work
-- **Security Notices**: Expiration warnings and support info
 
 ## Environment Variables
 
@@ -43,22 +32,56 @@ EMAIL_PASSWORD=your-app-password
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-### Email Service Setup
+## Email Service Setup
 
-#### Gmail Setup (Recommended)
-1. Enable 2-Factor Authentication on your Google Account
-2. Generate an App Password:
-   - Go to Google Account settings
-   - Navigate to Security → App passwords
-   - Select "Mail" and "Other (Custom name)"
-   - Enter "SEVIS PORTAL" as the name
-   - Copy the generated 16-character password
-3. Update your environment variables with the app password
+### 1. Gmail Setup (Recommended for Development)
 
-#### Other Email Providers
-- **Outlook/Hotmail**: Use your regular password
-- **Yahoo**: Generate an app password
-- **Custom SMTP**: Configure host, port, and credentials
+#### Step 1: Enable 2-Factor Authentication
+1. Go to your Google Account settings
+2. Navigate to Security
+3. Enable 2-Step Verification
+
+#### Step 2: Generate App Password
+1. Go to Google Account settings
+2. Navigate to Security → App passwords
+3. Select "Mail" and "Other (Custom name)"
+4. Enter "SEVIS PORTAL" as the name
+5. Copy the generated 16-character password
+
+#### Step 3: Update Environment Variables
+```bash
+EMAIL_USER=your-gmail@gmail.com
+EMAIL_PASSWORD=your-16-character-app-password
+```
+
+### 2. Other Email Providers
+
+#### Outlook/Hotmail
+```bash
+EMAIL_USER=your-email@outlook.com
+EMAIL_PASSWORD=your-password
+```
+
+#### Yahoo
+```bash
+EMAIL_USER=your-email@yahoo.com
+EMAIL_PASSWORD=your-app-password
+```
+
+#### Custom SMTP Server
+Update the `createTransporter` function in `lib/email-service.ts`:
+
+```typescript
+return nodemailer.createTransport({
+  host: 'your-smtp-server.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+})
+```
 
 ## Database Schema
 
@@ -81,30 +104,10 @@ CREATE TABLE email_verifications (
 );
 ```
 
-## Features Implemented
-
-### 1. Email Verification Flow
-- ✅ User registration creates verification token
-- ✅ Verification email details logged to console
-- ✅ Email verification page with status handling
-- ✅ Database updates for verified users
-- ✅ Welcome message after successful verification
-
-### 2. Security Features
-- ✅ Secure token generation (32-byte random)
-- ✅ Token expiration (24 hours)
-- ✅ One-time use tokens
-- ✅ Email validation
-
-### 3. User Experience
-- ✅ Clear success/error messages
-- ✅ Demo mode indicators
-- ✅ Graceful fallback handling
-- ✅ Console logging for debugging
-
 ## API Endpoints
 
 ### Email Verification
+- **POST** `/api/auth/send-verification` - Send verification email
 - **POST** `/api/auth/verify-email` - Verify email with token
 - **GET** `/api/auth/verify-email` - Verify email via link
 
@@ -125,7 +128,6 @@ CREATE TABLE email_verifications (
 - Check server console for email sending logs
 - Look for: `📧 Email sent successfully: [messageId]`
 - Check for any error messages
-- Monitor email delivery in your inbox
 
 ## Production Deployment
 
@@ -161,41 +163,21 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 - Great deliverability
 - Developer-friendly
 
-### Migration to Production Email Service
-If you want to switch from Nodemailer to a dedicated email service:
+## Email Templates
 
-1. **Choose Provider**: Select SendGrid, Mailgun, etc.
-2. **Install SDK**: Add the service's npm package
-3. **Update Email Service**: Modify `lib/email-service.ts`
-4. **Configure Environment**: Add API keys
-5. **Test Integration**: Verify email sending works
-6. **Deploy**: Update production environment variables
+### Verification Email Features
+- **Professional Header**: SEVIS PORTAL branding
+- **Clear Instructions**: Step-by-step verification process
+- **Verification Button**: Prominent call-to-action
+- **Fallback Link**: Text link for email clients that block buttons
+- **Security Notice**: 24-hour expiration warning
+- **Support Contact**: Help information
 
-### Example: SendGrid Integration
-```typescript
-// Install: npm install @sendgrid/mail
-import sgMail from '@sendgrid/mail'
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-
-export const emailService = {
-  async sendVerificationEmail(data: EmailVerificationData) {
-    const msg = {
-      to: data.email,
-      from: 'noreply@sevis.gov.pg',
-      subject: 'Verify Your Email - SEVIS PORTAL',
-      html: `<p>Click here to verify: ${verificationUrl}</p>`
-    }
-    
-    try {
-      await sgMail.send(msg)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error }
-    }
-  }
-}
-```
+### Welcome Email Features
+- **Success Confirmation**: Clear verification success message
+- **Service Overview**: What users can do now
+- **Dashboard Link**: Direct access to user dashboard
+- **Support Information**: Contact details for help
 
 ## Troubleshooting
 
@@ -242,28 +224,46 @@ export const emailService = {
 - Verify SMTP server settings
 - Try different email provider
 
-## Nodemailer Benefits
+## Security Considerations
 
-### Development Advantages
-- **Real Email Sending**: Actual email delivery
-- **Professional Templates**: Beautiful HTML emails
-- **Multiple Providers**: Gmail, Outlook, Yahoo, custom SMTP
-- **Easy Configuration**: Simple environment variables
-- **Cost Effective**: Free with most email providers
+### Email Security
+- Use app passwords, not regular passwords
+- Enable 2FA on email accounts
+- Use secure SMTP connections
+- Regularly rotate app passwords
 
-### Production Considerations
-- **Email Deliverability**: Monitor delivery rates
-- **Authentication**: Set up SPF, DKIM records
-- **Monitoring**: Track email metrics
-- **Compliance**: Ensure GDPR/privacy compliance
-- **Scalability**: Consider dedicated email services for high volume
+### Token Security
+- Tokens expire in 24 hours
+- One-time use tokens
+- Secure random generation
+- Database storage with encryption
+
+### Privacy Compliance
+- Include unsubscribe options
+- Respect user preferences
+- Follow GDPR guidelines
+- Secure data handling
+
+## Monitoring and Analytics
+
+### Email Metrics to Track
+- **Delivery Rate**: Percentage of emails delivered
+- **Open Rate**: Percentage of emails opened
+- **Click Rate**: Percentage of verification links clicked
+- **Bounce Rate**: Percentage of failed deliveries
+
+### Logging
+- Email sending success/failure
+- Verification attempts
+- Error messages and stack traces
+- Performance metrics
 
 ## Support
 
 For issues with email verification:
-1. Check server console for email logs
-2. Verify email credentials in environment variables
-3. Test email credentials manually
+1. Check server console logs
+2. Verify environment variables
+3. Test email credentials
 4. Review database connection
 5. Check email provider status
 

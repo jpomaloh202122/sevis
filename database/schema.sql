@@ -115,10 +115,9 @@ INSERT INTO services (name, category, description, requirements, processing_time
 ('Police Clearance', 'Public Safety', 'Obtain police clearance certificate', ARRAY['National ID', 'Fingerprint form'], '5-7 business days', 75.00, true),
 ('Import License', 'Business & Commerce', 'Apply for import business license', ARRAY['Business registration', 'Tax clearance', 'Bank guarantee'], '10-15 business days', 800.00, true);
 
--- Insert demo users (password: "pawword")
-INSERT INTO users (email, name, role, national_id, phone, email_verified, phone_verified, verification_method) VALUES
-('admin@sevis.gov.pg', 'Admin User', 'admin', 'ADMIN001', '+67512345678', true, true, 'email'),
-('user@example.com', 'Demo User', 'user', 'USER001', '+67587654321', true, true, 'email');
+-- Note: Demo users have been removed. Users must register through the application.
+-- To create an admin user, register normally and then update the role in the database:
+-- UPDATE users SET role = 'admin' WHERE email = 'your-admin-email@example.com';
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

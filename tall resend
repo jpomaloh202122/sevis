@@ -1,0 +1,5 @@
+[33m0e7b431[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Add Twilio SMS verification as alternative to email verification
+[33mbaf7da0[m Add email verification system with nodemailer integration
+[33m0e0ddea[m[33m ([m[1;31morigin/main[m[33m)[m fix: resolve TypeError Invalid URL in build process - Replace invalid placeholder URLs with valid format - Fix Supabase config to use proper URL structure - Ensures successful build for Netlify deployment
+[33m6d09e13[m fix: resolve invalid URL errors in build process - Fix social media links with proper URLs - Update footer links to point to existing pages - Replace invalid href='#' with valid URLs - Ensure all links point to accessible pages
+[33mf4c499f[m fix: resolve TypeScript error in AuthContext - Fix type mismatch for loginWithUser function - Change userData parameter type from User to any - Ensures proper compilation for production build
