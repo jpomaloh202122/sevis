@@ -56,6 +56,53 @@ export const userService = {
       .single()
     
     return { data, error }
+  },
+
+  // Email verification methods
+  async createEmailVerification(email: string, token: string) {
+    const { data, error } = await supabase
+      .from('email_verifications')
+      .insert([{ email, token }])
+      .select()
+      .single()
+    
+    return { data, error }
+  },
+
+  async getEmailVerification(token: string) {
+    const { data, error } = await supabase
+      .from('email_verifications')
+      .select('*')
+      .eq('token', token)
+      .eq('is_used', false)
+      .single()
+    
+    return { data, error }
+  },
+
+  async markEmailVerificationUsed(token: string) {
+    const { data, error } = await supabase
+      .from('email_verifications')
+      .update({ is_used: true })
+      .eq('token', token)
+      .select()
+      .single()
+    
+    return { data, error }
+  },
+
+  async verifyUserEmail(email: string) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ 
+        email_verified: true,
+        email_verified_at: new Date().toISOString()
+      })
+      .eq('email', email)
+      .select()
+      .single()
+    
+    return { data, error }
   }
 }
 

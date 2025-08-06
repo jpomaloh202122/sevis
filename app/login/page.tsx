@@ -39,25 +39,45 @@ export default function LoginPage() {
         }
       } else {
         // For regular users, try to find in database first
-        const { data: dbUser, error } = await userService.getUserByEmail(formData.email)
-        
-        if (error || !dbUser) {
-          // If user not found in database, check if it's the demo user
-          if (formData.email === 'user@example.com' && formData.password === 'pawword') {
-            // Demo user login
-            await login(formData.email, formData.password, 'user')
+        try {
+          const { data: dbUser, error } = await userService.getUserByEmail(formData.email)
+          
+          if (error || !dbUser) {
+            // If user not found in database, check if it's the demo user
+            if (formData.email === 'user@example.com' && formData.password === 'pawword') {
+              // Demo user login
+              await login(formData.email, formData.password, 'user')
+              router.push('/dashboard')
+              return
+            } else {
+              setError('User not found. Please check your email or register.')
+              return
+            }
+          }
+
+          // User found in database - for demo purposes, accept any password
+          // In production, you would hash and compare passwords properly
+          await loginWithUser(dbUser)
+          router.push('/dashboard')
+        } catch (dbError) {
+          // If database is not available, allow demo login
+          console.log('Database not available, allowing demo login')
+          if (formData.password === 'pawword') {
+            // Create a demo user object
+            const demoUser = {
+              id: 'demo-user',
+              name: formData.email.split('@')[0],
+              email: formData.email,
+              role: 'user' as const,
+              national_id: 'DEMO123',
+              phone: '+675 000 0000'
+            }
+            await loginWithUser(demoUser)
             router.push('/dashboard')
-            return
           } else {
-            setError('User not found. Please check your email or register.')
-            return
+            setError('Demo login failed. Please use password: pawword')
           }
         }
-
-        // User found in database - for demo purposes, accept any password
-        // In production, you would hash and compare passwords properly
-        await loginWithUser(dbUser)
-        router.push('/dashboard')
       }
     } catch (error) {
       console.error('Login error:', error)
