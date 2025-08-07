@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     national_id VARCHAR(50) NOT NULL,
     phone VARCHAR(20) NOT NULL,
+    photo_url TEXT,
     email_verified BOOLEAN DEFAULT false,
     email_verified_at TIMESTAMP WITH TIME ZONE,
     phone_verified BOOLEAN DEFAULT false,

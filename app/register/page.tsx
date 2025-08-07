@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import WebcamCapture from '@/components/WebcamCapture'
 import { userService } from '@/lib/database'
 import { validatePassword } from '@/lib/utils'
 
@@ -28,6 +29,7 @@ export default function RegisterPage() {
     verificationMethod: 'email' as 'email' | 'sms',
     agreeToTerms: false
   })
+  const [photoData, setPhotoData] = useState<string>('')
 
   const validateForm = () => {
     // Check if passwords match
@@ -55,6 +57,12 @@ export default function RegisterPage() {
       return false
     }
 
+    // Check if photo is captured (optional for now, but can be made required)
+    if (!photoData) {
+      setError('Please capture a profile photo')
+      return false
+    }
+
     return true
   }
 
@@ -76,7 +84,8 @@ export default function RegisterPage() {
         name: `${formData.firstName} ${formData.lastName}`,
         role: 'user' as const,
         national_id: formData.nationalId,
-        phone: formData.phone
+        phone: formData.phone,
+        photo_url: photoData
       }
 
       // Try to register user in database
@@ -135,6 +144,7 @@ export default function RegisterPage() {
         verificationMethod: 'email',
         agreeToTerms: false
       })
+      setPhotoData('')
 
       // Redirect to login after 2 seconds
       setTimeout(() => {
@@ -318,6 +328,14 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
+
+              {/* Profile Photo */}
+              <WebcamCapture
+                onPhotoCapture={setPhotoData}
+                onPhotoClear={() => setPhotoData('')}
+                photoData={photoData}
+                isRequired={true}
+              />
 
               {/* Password */}
               <div>

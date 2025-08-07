@@ -9,6 +9,7 @@ interface User {
   role: 'user' | 'admin'
   nationalId: string
   phone: string
+  photoUrl?: string
 }
 
 interface AuthContextType {
@@ -61,7 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: userData.email,
         role: userData.role,
         nationalId: userData.national_id || '',
-        phone: userData.phone
+        phone: userData.phone,
+        photoUrl: userData.photo_url
       }
       
       setUser(user)

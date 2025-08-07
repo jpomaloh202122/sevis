@@ -15,6 +15,12 @@ export interface Database {
           role: 'user' | 'admin'
           national_id: string
           phone: string
+          photo_url?: string
+          email_verified?: boolean
+          email_verified_at?: string
+          phone_verified?: boolean
+          phone_verified_at?: string
+          verification_method?: 'email' | 'sms'
           created_at: string
           updated_at: string
         }
@@ -25,6 +31,12 @@ export interface Database {
           role?: 'user' | 'admin'
           national_id: string
           phone: string
+          photo_url?: string
+          email_verified?: boolean
+          email_verified_at?: string
+          phone_verified?: boolean
+          phone_verified_at?: string
+          verification_method?: 'email' | 'sms'
           created_at?: string
           updated_at?: string
         }
@@ -35,6 +47,12 @@ export interface Database {
           role?: 'user' | 'admin'
           national_id?: string
           phone?: string
+          photo_url?: string
+          email_verified?: boolean
+          email_verified_at?: string
+          phone_verified?: boolean
+          phone_verified_at?: string
+          verification_method?: 'email' | 'sms'
           created_at?: string
           updated_at?: string
         }

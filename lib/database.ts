@@ -25,6 +25,7 @@ export const userService = {
     role?: 'user' | 'admin'
     national_id: string
     phone: string
+    photo_url?: string
   }) {
     const { data, error } = await supabase
       .from('users')
