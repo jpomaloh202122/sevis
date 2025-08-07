@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { CameraIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { CameraIcon, ArrowPathIcon, CheckIcon, XMarkIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline'
 
 interface WebcamCaptureProps {
   onPhotoCapture: (photoData: string) => void
@@ -18,6 +18,7 @@ export default function WebcamCapture({
 }: WebcamCaptureProps) {
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isCapturing, setIsCapturing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -57,29 +58,38 @@ export default function WebcamCapture({
     setIsCameraActive(false)
   }, [])
 
-  const capturePhoto = useCallback(() => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      const context = canvas.getContext('2d')
+  const capturePhoto = useCallback(async () => {
+    if (videoRef.current && canvasRef.current && !isCapturing) {
+      setIsCapturing(true)
       
-      if (context) {
-        // Set canvas dimensions to match video
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
+      try {
+        const video = videoRef.current
+        const canvas = canvasRef.current
+        const context = canvas.getContext('2d')
         
-        // Draw the video frame to canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height)
-        
-        // Convert to base64
-        const photoData = canvas.toDataURL('image/jpeg', 0.8)
-        onPhotoCapture(photoData)
-        
-        // Stop camera after capture
-        stopCamera()
+        if (context) {
+          // Set canvas dimensions to match video
+          canvas.width = video.videoWidth
+          canvas.height = video.videoHeight
+          
+          // Draw the video frame to canvas
+          context.drawImage(video, 0, 0, canvas.width, canvas.height)
+          
+          // Convert to base64
+          const photoData = canvas.toDataURL('image/jpeg', 0.8)
+          onPhotoCapture(photoData)
+          
+          // Stop camera after capture
+          stopCamera()
+        }
+      } catch (err) {
+        console.error('Error capturing photo:', err)
+        setError('Failed to capture photo. Please try again.')
+      } finally {
+        setIsCapturing(false)
       }
     }
-  }, [onPhotoCapture, stopCamera])
+  }, [onPhotoCapture, stopCamera, isCapturing])
 
   const clearPhoto = useCallback(() => {
     onPhotoClear()
@@ -120,24 +130,25 @@ export default function WebcamCapture({
       {photoData ? (
         // Show captured photo
         <div className="relative">
-          <img
-            src={photoData}
-            alt="Captured profile photo"
-            className="w-full max-w-xs h-48 object-cover rounded-lg border border-gray-300"
-          />
-          <div className="mt-2 flex space-x-2">
+          <div className="relative w-full max-w-xs mx-auto">
+            <img
+              src={photoData}
+              alt="Captured profile photo"
+              className="w-full h-48 object-cover rounded-lg border border-gray-300 shadow-md"
+            />
+            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+              <CheckIcon className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex justify-center">
             <button
               type="button"
               onClick={startCamera}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red transition-colors"
             >
               <CameraIcon className="h-4 w-4 mr-2" />
               Retake Photo
             </button>
-            <div className="inline-flex items-center px-3 py-2 text-sm text-green-600">
-              <CheckIcon className="h-4 w-4 mr-2" />
-              Photo Captured
-            </div>
           </div>
         </div>
       ) : (
@@ -145,65 +156,90 @@ export default function WebcamCapture({
         <div className="space-y-4">
           {!isCameraActive ? (
             // Camera not active - show start button
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <CameraIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  disabled={isLoading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-png-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <>
-                      <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
-                      Starting Camera...
-                    </>
-                  ) : (
-                    <>
-                      <CameraIcon className="h-4 w-4 mr-2" />
-                      Start Camera
-                    </>
-                  )}
-                </button>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                <CameraIcon className="h-8 w-8 text-gray-400" />
               </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Click to start your camera and take a profile photo
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Capture Profile Photo</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Take a clear photo of your face for your profile
               </p>
+              <button
+                type="button"
+                onClick={startCamera}
+                disabled={isLoading}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-png-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? (
+                  <>
+                    <ArrowPathIcon className="animate-spin h-5 w-5 mr-2" />
+                    Starting Camera...
+                  </>
+                ) : (
+                  <>
+                    <PlayIcon className="h-5 w-5 mr-2" />
+                    Start Camera
+                  </>
+                )}
+              </button>
             </div>
           ) : (
-            // Camera active - show video and capture button
+            // Camera active - show video with integrated controls
             <div className="space-y-4">
-              <div className="relative">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full max-w-xs h-48 object-cover rounded-lg border border-gray-300"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-black bg-opacity-50 rounded-full p-2">
-                    <CameraIcon className="h-6 w-6 text-white" />
+              <div className="relative w-full max-w-xs mx-auto">
+                {/* Video container with overlay */}
+                <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-48 object-cover"
+                  />
+                  
+                  {/* Camera overlay with capture button */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-black bg-opacity-30 rounded-full p-1">
+                      <div className="bg-white rounded-full p-2">
+                        <CameraIcon className="h-6 w-6 text-gray-700" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Capture button overlay */}
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      disabled={isCapturing}
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-png-red hover:bg-red-700 text-white shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
+                    >
+                      {isCapturing ? (
+                        <ArrowPathIcon className="animate-spin h-5 w-5" />
+                      ) : (
+                        <CameraIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* Stop camera button */}
+                  <div className="absolute top-2 right-2">
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red transition-colors"
+                    >
+                      <StopIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  type="button"
-                  onClick={capturePhoto}
-                  className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-png-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red"
-                >
-                  <CameraIcon className="h-4 w-4 mr-2" />
-                  Capture Photo
-                </button>
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red"
-                >
-                  Cancel
-                </button>
+                
+                {/* Instructions */}
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-gray-600">
+                    Position your face in the center and click the camera button to capture
+                  </p>
+                </div>
               </div>
             </div>
           )}
