@@ -293,7 +293,7 @@ export default function CityPassPage() {
                   {/* Application Button */}
                   <div className="mt-8 text-center">
                     <Link
-                      href={`/services/apply?service=city-pass&category=${category.id}`}
+                      href={`/services/citizen-services/city-pass/apply?category=${category.id}`}
                       className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-png-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-png-red transition-colors"
                     >
                       Apply for {category.name} City Pass

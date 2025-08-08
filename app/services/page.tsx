@@ -205,7 +205,7 @@ export default function ServicesPage() {
                 
                 <div className="mt-4 lg:mt-0 lg:ml-6">
                   <Link
-                    href={`/services/${service.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    href={service.name === 'City Pass' ? '/services/citizen-services/city-pass' : `/services/${service.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="inline-block px-4 py-2 bg-png-red text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     Access Service
