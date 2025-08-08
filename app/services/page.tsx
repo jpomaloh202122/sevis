@@ -13,6 +13,7 @@ const allServices = [
   { name: 'Marriage Certificate', category: 'Citizen Services', description: 'Apply for marriage certificate or registration', status: 'Available', priority: 'Medium' },
   { name: 'Passport Services', category: 'Citizen Services', description: 'Apply for or renew your passport', status: 'Available', priority: 'High' },
   { name: 'Voter Registration', category: 'Citizen Services', description: 'Register to vote in elections', status: 'Available', priority: 'Medium' },
+  { name: 'City Pass', category: 'Citizen Services', description: 'Apply for city pass for Property Owners, Students, Employees, and Business Persons', status: 'Available', priority: 'High' },
   
   // Business Services
   { name: 'Business Registration', category: 'Business & Commerce', description: 'Register your business with the government', status: 'Available', priority: 'High' },

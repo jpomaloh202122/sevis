@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MagnifyingGlassIcon, ArrowLeftIcon, DocumentTextIcon, UserIcon, HeartIcon, IdentificationIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, ArrowLeftIcon, DocumentTextIcon, UserIcon, HeartIcon, IdentificationIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -71,6 +71,19 @@ const citizenServices = [
     icon: UserIcon,
     color: 'bg-orange-500',
     details: 'Voter registration is mandatory for all eligible citizens to participate in national and local elections.'
+  },
+  {
+    id: 'city-pass',
+    name: 'City Pass',
+    description: 'Apply for city pass for Property Owners, Students, Employees, and Business Persons',
+    status: 'Available',
+    priority: 'High',
+    processingTime: '1-2 weeks',
+    requirements: ['National ID', 'Proof of Address', 'Employment/Student/Property Documents', 'Passport Photo'],
+    fee: 'K100',
+    icon: BuildingOfficeIcon,
+    color: 'bg-indigo-500',
+    details: 'City Pass provides access to various city services and facilities for residents, students, employees, and business owners. Different categories available based on your status.'
   }
 ]
 
