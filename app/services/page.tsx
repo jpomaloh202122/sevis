@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import ApplyNowButton from '@/components/ApplyNowButton'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -204,12 +205,12 @@ export default function ServicesPage() {
                 </div>
                 
                 <div className="mt-4 lg:mt-0 lg:ml-6">
-                  <Link
+                  <ApplyNowButton
                     href={service.name === 'City Pass' ? '/services/citizen-services/city-pass' : `/services/${service.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="inline-block px-4 py-2 bg-png-red text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     Access Service
-                  </Link>
+                  </ApplyNowButton>
                 </div>
               </div>
             </div>

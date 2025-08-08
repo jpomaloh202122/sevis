@@ -96,8 +96,7 @@ export default function RegisterPage() {
           if (error.message.includes('duplicate key')) {
             setError('An account with this email already exists')
           } else {
-            // If database registration fails, show demo message
-            setSuccess('Demo: Account created successfully! (Database not available in demo) Redirecting to login...')
+                    setError('Failed to create account. Please try again.')
           }
           return
         }
@@ -127,9 +126,7 @@ export default function RegisterPage() {
           setSuccess(`Account created successfully! Please check your ${method.toLowerCase()} to verify your account before logging in.`)
         }
       } catch (dbError) {
-        // If Supabase is not available, show demo success
-        console.log('Database not available, showing demo success')
-        setSuccess('Demo: Account created successfully! (Database not available in demo) Redirecting to login...')
+        setError('Database connection failed. Please try again later.')
       }
       
       // Clear form

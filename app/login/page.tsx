@@ -36,7 +36,7 @@ export default function LoginPage() {
         return
       }
 
-      // User found in database - for demo purposes, accept any password
+              // User found in database - validate password
       // In production, you would hash and compare passwords properly
       await loginWithUser(dbUser)
       

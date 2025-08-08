@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MagnifyingGlassIcon, ArrowLeftIcon, DocumentTextIcon, UserIcon, HeartIcon, IdentificationIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import ApplyNowButton from '@/components/ApplyNowButton'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -201,12 +202,10 @@ export default function CitizenServicesPage() {
                     <p className="text-sm text-gray-600">{service.details}</p>
                   </div>
 
-                  <Link
+                  <ApplyNowButton
                     href={`/services/citizen-services/${service.id}`}
                     className="w-full bg-png-red text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-center block"
-                  >
-                    Apply Now
-                  </Link>
+                  />
                 </div>
               </div>
             )

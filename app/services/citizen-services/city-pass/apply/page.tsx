@@ -188,23 +188,25 @@ function CityPassApplicationClient() {
 
     try {
       if (!user?.id) {
-        setNotice('Demo mode: login required to persist application. Showing confirmation without saving.')
-      } else {
-        const { error } = await applicationService.createApplication({
-          user_id: user.id,
-          service_name: 'City Pass',
-          application_data: payload,
-          reference_number: ref
-        })
-        if (error) {
-          console.error('Create application error:', error)
-          setNotice('Demo mode: could not save to database. Showing confirmation without saving.')
-        }
+        throw new Error('User must be logged in to submit application')
       }
+      
+      const { error } = await applicationService.createApplication({
+        user_id: user.id,
+        service_name: 'City Pass',
+        application_data: payload,
+        reference_number: ref
+      })
+      
+      if (error) {
+        console.error('Create application error:', error)
+        throw new Error('Failed to save application to database')
+      }
+      
       setSubmissionComplete(true)
     } catch (err) {
       console.error('Submission error:', err)
-      setNotice('Demo mode: submission failed to reach database. Showing confirmation without saving.')
+      setNotice(`Application submission failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
       setSubmissionComplete(true)
     } finally {
       setIsSubmitting(false)
@@ -222,7 +224,7 @@ function CityPassApplicationClient() {
                 <CheckIcon className="w-8 h-8 text-green-600" />
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-4">Application Submitted Successfully!</h1>
-              {notice && <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-4">{notice}</p>}
+              {notice && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2 mb-4">{notice}</p>}
               <div className="bg-gray-50 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Application Details</h3>
                 <div className="space-y-2 text-sm">
