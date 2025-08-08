@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { resendEmailService } from './resend-email-service'
 
 export interface EmailVerificationData {
   email: string
@@ -23,6 +24,12 @@ const getBrevoTransporter = () => {
 
   if (!host || !port || !user || !password) {
     console.warn('⚠️ Brevo SMTP configuration not found. Email service will not work.')
+    console.warn('Missing:', { 
+      host: !host ? 'BREVO_SMTP_HOST' : 'OK',
+      port: !port ? 'BREVO_SMTP_PORT' : 'OK', 
+      user: !user ? 'BREVO_SMTP_USER' : 'OK',
+      password: !password ? 'BREVO_SMTP_PASSWORD' : 'OK'
+    })
     return null
   }
 
@@ -41,9 +48,21 @@ export const emailService = {
   // Send email verification
   async sendVerificationEmail(data: EmailVerificationData) {
     try {
+      // Try Resend first (better for Netlify)
+      if (process.env.RESEND_API_KEY) {
+        console.log('📧 Using Resend email service')
+        return await resendEmailService.sendVerificationEmail(
+          data.email, 
+          data.name, 
+          data.verificationToken, 
+          data.baseUrl
+        )
+      }
+
+      // Fallback to Brevo SMTP
       const transporter = getBrevoTransporter()
       if (!transporter) {
-        console.log('📧 Email service not available - skipping verification email')
+        console.log('📧 No email service available - returning demo mode')
         return { success: true, messageId: 'demo-mode' }
       }
 
@@ -189,6 +208,13 @@ export const emailService = {
   // Send welcome email after verification
   async sendWelcomeEmail(email: string, name: string) {
     try {
+      // Try Resend first
+      if (process.env.RESEND_API_KEY) {
+        const dashboardUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard`
+        return await resendEmailService.sendWelcomeEmail(email, name, dashboardUrl)
+      }
+
+      // Fallback to Brevo SMTP
       const transporter = getBrevoTransporter()
       if (!transporter) {
         console.log('📧 Email service not available - skipping welcome email')
