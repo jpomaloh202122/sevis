@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
 export interface EmailVerificationData {
   email: string
@@ -14,30 +14,31 @@ export interface PasswordResetData {
   baseUrl: string
 }
 
-// Create transporter for sending emails
-const createTransporter = () => {
-  // For development, you can use Gmail or other SMTP services
-  // For production, consider using services like SendGrid, Mailgun, etc.
-  
-  return nodemailer.createTransport({
-    service: 'gmail', // or 'outlook', 'yahoo', etc.
-    auth: {
-      user: process.env.EMAIL_USER, // your email
-      pass: process.env.EMAIL_PASSWORD // your app password
-    }
-  })
+// Initialize Resend only if API key is available
+const getResend = () => {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('⚠️ RESEND_API_KEY not found. Email service will not work.')
+    return null
+  }
+  return new Resend(apiKey)
 }
 
 export const emailService = {
   // Send email verification
   async sendVerificationEmail(data: EmailVerificationData) {
     try {
-      const transporter = createTransporter()
+      const resend = getResend()
+      if (!resend) {
+        console.log('📧 Email service not available - skipping verification email')
+        return { success: true, messageId: 'demo-mode' }
+      }
+
       const verificationUrl = `${data.baseUrl}/verify-email?token=${data.verificationToken}&email=${encodeURIComponent(data.email)}`
       
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: data.email,
+      const { data: emailData, error } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevis.gov.pg>',
+        to: [data.email],
         subject: 'Verify Your Email - SEVIS PORTAL',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -86,12 +87,15 @@ export const emailService = {
             </div>
           </div>
         `
+      })
+      
+      if (error) {
+        console.error('📧 Resend email sending failed:', error)
+        return { success: false, error: error.message }
       }
       
-      const result = await transporter.sendMail(mailOptions)
-      console.log('📧 Email sent successfully:', result.messageId)
-      
-      return { success: true, messageId: result.messageId }
+      console.log('📧 Email sent successfully:', emailData?.id)
+      return { success: true, messageId: emailData?.id }
     } catch (error) {
       console.error('📧 Email sending failed:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
@@ -101,12 +105,17 @@ export const emailService = {
   // Send password reset email
   async sendPasswordResetEmail(data: PasswordResetData) {
     try {
-      const transporter = createTransporter()
+      const resend = getResend()
+      if (!resend) {
+        console.log('📧 Email service not available - skipping password reset email')
+        return { success: true, messageId: 'demo-mode' }
+      }
+
       const resetUrl = `${data.baseUrl}/reset-password?token=${data.resetToken}&email=${encodeURIComponent(data.email)}`
       
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: data.email,
+      const { data: emailData, error } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevis.gov.pg>',
+        to: [data.email],
         subject: 'Reset Your Password - SEVIS PORTAL',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -155,12 +164,15 @@ export const emailService = {
             </div>
           </div>
         `
+      })
+      
+      if (error) {
+        console.error('📧 Resend password reset email sending failed:', error)
+        return { success: false, error: error.message }
       }
       
-      const result = await transporter.sendMail(mailOptions)
-      console.log('📧 Password reset email sent successfully:', result.messageId)
-      
-      return { success: true, messageId: result.messageId }
+      console.log('📧 Password reset email sent successfully:', emailData?.id)
+      return { success: true, messageId: emailData?.id }
     } catch (error) {
       console.error('📧 Password reset email sending failed:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
@@ -170,11 +182,15 @@ export const emailService = {
   // Send welcome email after verification
   async sendWelcomeEmail(email: string, name: string) {
     try {
-      const transporter = createTransporter()
-      
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
+      const resend = getResend()
+      if (!resend) {
+        console.log('📧 Email service not available - skipping welcome email')
+        return { success: true, messageId: 'demo-mode' }
+      }
+
+      const { data: emailData, error } = await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevis.gov.pg>',
+        to: [email],
         subject: 'Welcome to SEVIS PORTAL - Email Verified!',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -225,12 +241,15 @@ export const emailService = {
             </div>
           </div>
         `
+      })
+      
+      if (error) {
+        console.error('📧 Resend welcome email sending failed:', error)
+        return { success: false, error: error.message }
       }
       
-      const result = await transporter.sendMail(mailOptions)
-      console.log('📧 Welcome email sent successfully:', result.messageId)
-      
-      return { success: true, messageId: result.messageId }
+      console.log('📧 Welcome email sent successfully:', emailData?.id)
+      return { success: true, messageId: emailData?.id }
     } catch (error) {
       console.error('📧 Welcome email sending failed:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }

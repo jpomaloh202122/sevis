@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import WebcamCapture from '@/components/WebcamCapture'
 import { userService } from '@/lib/database'
 import { validatePassword } from '@/lib/utils'
 
@@ -26,10 +25,8 @@ export default function RegisterPage() {
     nationalId: '',
     password: '',
     confirmPassword: '',
-    verificationMethod: 'email' as 'email' | 'sms',
     agreeToTerms: false
   })
-  const [photoData, setPhotoData] = useState<string>('')
 
   const validateForm = () => {
     // Check if passwords match
@@ -51,15 +48,9 @@ export default function RegisterPage() {
       return false
     }
 
-    // Check if all required fields are filled
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.nationalId) {
-      setError('All fields are required')
-      return false
-    }
-
-    // Check if photo is captured (optional for now, but can be made required)
-    if (!photoData) {
-      setError('Please capture a profile photo')
+    // Check if all required fields are filled (NID is now optional)
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+      setError('First Name, Last Name, Email, and Phone Number are required')
       return false
     }
 
@@ -85,7 +76,7 @@ export default function RegisterPage() {
         role: 'user' as const,
         national_id: formData.nationalId,
         phone: formData.phone,
-        photo_url: photoData
+        photo_url: '' // Photo is now optional, so set to empty string
       }
 
       // Try to register user in database
@@ -102,13 +93,9 @@ export default function RegisterPage() {
         }
 
         // Send verification based on method
-        const verificationEndpoint = formData.verificationMethod === 'sms' 
-          ? '/api/auth/send-sms-verification'
-          : '/api/auth/send-verification'
+        const verificationEndpoint = '/api/auth/send-verification'
         
-        const verificationData = formData.verificationMethod === 'sms'
-          ? { phoneNumber: formData.phone, name: `${formData.firstName} ${formData.lastName}` }
-          : { email: formData.email, name: `${formData.firstName} ${formData.lastName}` }
+        const verificationData = { email: formData.email, name: `${formData.firstName} ${formData.lastName}` }
 
         const response = await fetch(verificationEndpoint, {
           method: 'POST',
@@ -119,11 +106,9 @@ export default function RegisterPage() {
         })
 
         if (response.ok) {
-          const method = formData.verificationMethod === 'sms' ? 'SMS' : 'email'
-          setSuccess(`Account created successfully! Please check your ${method.toLowerCase()} to verify your account before logging in.`)
+          setSuccess(`Account created successfully! Please check your email to verify your account before logging in.`)
         } else {
-          const method = formData.verificationMethod === 'sms' ? 'SMS' : 'email'
-          setSuccess(`Account created successfully! Please check your ${method.toLowerCase()} to verify your account before logging in.`)
+          setSuccess(`Account created successfully! Please check your email to verify your account before logging in.`)
         }
       } catch (dbError) {
         setError('Database connection failed. Please try again later.')
@@ -138,10 +123,8 @@ export default function RegisterPage() {
         nationalId: '',
         password: '',
         confirmPassword: '',
-        verificationMethod: 'email',
         agreeToTerms: false
       })
-      setPhotoData('')
 
       // Redirect to login after 2 seconds
       setTimeout(() => {
@@ -276,63 +259,23 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Verification Method */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Method
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="verificationMethod"
-                      value="email"
-                      checked={formData.verificationMethod === 'email'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-png-red focus:ring-png-red border-gray-300"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Email verification</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="verificationMethod"
-                      value="sms"
-                      checked={formData.verificationMethod === 'sms'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-png-red focus:ring-png-red border-gray-300"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">SMS verification</span>
-                  </label>
-                </div>
-              </div>
-
               {/* National ID */}
               <div>
                 <label htmlFor="nationalId" className="block text-sm font-medium text-gray-700">
-                  National ID Number
+                  National ID Number (Optional)
                 </label>
                 <div className="mt-1">
                   <input
                     id="nationalId"
                     name="nationalId"
                     type="text"
-                    required
                     value={formData.nationalId}
                     onChange={handleInputChange}
                     className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-png-red focus:outline-none focus:ring-png-red sm:text-sm"
-                    placeholder="Enter your National ID"
+                    placeholder="Enter your National ID (optional)"
                   />
                 </div>
               </div>
-
-              {/* Profile Photo */}
-              <WebcamCapture
-                onPhotoCapture={setPhotoData}
-                onPhotoClear={() => setPhotoData('')}
-                photoData={photoData}
-                isRequired={true}
-              />
 
               {/* Password */}
               <div>
