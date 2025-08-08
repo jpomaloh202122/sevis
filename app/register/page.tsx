@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { userService } from '@/lib/database'
 import { validatePassword } from '@/lib/utils'
+import bcrypt from 'bcryptjs'
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -69,17 +70,21 @@ export default function RegisterPage() {
     setIsSubmitting(true)
 
     try {
-      // Create user data for database
+      // Hash password
+      const passwordHash = await bcrypt.hash(formData.password, 12)
+
+      // Create user data for database (user will be unverified by default)
       const userData = {
         email: formData.email,
         name: `${formData.firstName} ${formData.lastName}`,
         role: 'user' as const,
         national_id: formData.nationalId,
         phone: formData.phone,
-        photo_url: '' // Photo is now optional, so set to empty string
+        photo_url: '', // Photo is now optional, so set to empty string
+        password_hash: passwordHash
       }
 
-      // Try to register user in database
+      // Try to register user in database (will be created as unverified)
       try {
         const { data: user, error } = await userService.createUser(userData)
 
@@ -106,9 +111,9 @@ export default function RegisterPage() {
         })
 
         if (response.ok) {
-          setSuccess(`Account created successfully! Please check your email to verify your account before logging in.`)
+          setSuccess(`Account created! Please check your email to verify your account. You cannot log in until your email is verified.`)
         } else {
-          setSuccess(`Account created successfully! Please check your email to verify your account before logging in.`)
+          setSuccess(`Account created! Please check your email to verify your account. You cannot log in until your email is verified.`)
         }
       } catch (dbError) {
         setError('Database connection failed. Please try again later.')

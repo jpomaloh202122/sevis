@@ -1,4 +1,4 @@
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 
 export interface EmailVerificationData {
   email: string
@@ -14,31 +14,44 @@ export interface PasswordResetData {
   baseUrl: string
 }
 
-// Initialize Resend only if API key is available
-const getResend = () => {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    console.warn('⚠️ RESEND_API_KEY not found. Email service will not work.')
+// Initialize Brevo SMTP transporter
+const getBrevoTransporter = () => {
+  const host = process.env.BREVO_SMTP_HOST
+  const port = process.env.BREVO_SMTP_PORT
+  const user = process.env.BREVO_SMTP_USER
+  const password = process.env.BREVO_SMTP_PASSWORD
+
+  if (!host || !port || !user || !password) {
+    console.warn('⚠️ Brevo SMTP configuration not found. Email service will not work.')
     return null
   }
-  return new Resend(apiKey)
+
+  return nodemailer.createTransport({
+    host: host,
+    port: parseInt(port),
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: user,
+      pass: password,
+    },
+  })
 }
 
 export const emailService = {
   // Send email verification
   async sendVerificationEmail(data: EmailVerificationData) {
     try {
-      const resend = getResend()
-      if (!resend) {
+      const transporter = getBrevoTransporter()
+      if (!transporter) {
         console.log('📧 Email service not available - skipping verification email')
         return { success: true, messageId: 'demo-mode' }
       }
 
       const verificationUrl = `${data.baseUrl}/verify-email?token=${data.verificationToken}&email=${encodeURIComponent(data.email)}`
       
-      const { data: emailData, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevis.gov.pg>',
-        to: [data.email],
+      const mailOptions = {
+        from: process.env.BREVO_FROM_EMAIL || 'Joshua <pomalohjoshua@gmail.com>',
+        to: data.email,
         subject: 'Verify Your Email - SEVIS PORTAL',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -82,20 +95,17 @@ export const emailService = {
               <p style="color: #6b7280; font-size: 12px; text-align: center;">
                 This is an automated message from SEVIS PORTAL. Please do not reply to this email.
                 <br>
-                For support, contact us at support@sevis.gov.pg
+                For support, contact us at support@ict.gov.pg
               </p>
             </div>
           </div>
         `
-      })
-      
-      if (error) {
-        console.error('📧 Resend email sending failed:', error)
-        return { success: false, error: error.message }
       }
       
-      console.log('📧 Email sent successfully:', emailData?.id)
-      return { success: true, messageId: emailData?.id }
+      const result = await transporter.sendMail(mailOptions)
+      
+      console.log('📧 Email sent successfully:', result.messageId)
+      return { success: true, messageId: result.messageId }
     } catch (error) {
       console.error('📧 Email sending failed:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
@@ -105,17 +115,17 @@ export const emailService = {
   // Send password reset email
   async sendPasswordResetEmail(data: PasswordResetData) {
     try {
-      const resend = getResend()
-      if (!resend) {
+      const transporter = getBrevoTransporter()
+      if (!transporter) {
         console.log('📧 Email service not available - skipping password reset email')
         return { success: true, messageId: 'demo-mode' }
       }
 
       const resetUrl = `${data.baseUrl}/reset-password?token=${data.resetToken}&email=${encodeURIComponent(data.email)}`
       
-      const { data: emailData, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevis.gov.pg>',
-        to: [data.email],
+      const mailOptions = {
+        from: process.env.BREVO_FROM_EMAIL || 'Joshua <pomalohjoshua@gmail.com>',
+        to: data.email,
         subject: 'Reset Your Password - SEVIS PORTAL',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -159,20 +169,17 @@ export const emailService = {
               <p style="color: #6b7280; font-size: 12px; text-align: center;">
                 This is an automated message from SEVIS PORTAL. Please do not reply to this email.
                 <br>
-                For support, contact us at support@sevis.gov.pg
+                For support, contact us at support@ict.gov.pg
               </p>
             </div>
           </div>
         `
-      })
-      
-      if (error) {
-        console.error('📧 Resend password reset email sending failed:', error)
-        return { success: false, error: error.message }
       }
       
-      console.log('📧 Password reset email sent successfully:', emailData?.id)
-      return { success: true, messageId: emailData?.id }
+      const result = await transporter.sendMail(mailOptions)
+      
+      console.log('📧 Password reset email sent successfully:', result.messageId)
+      return { success: true, messageId: result.messageId }
     } catch (error) {
       console.error('📧 Password reset email sending failed:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
@@ -182,15 +189,15 @@ export const emailService = {
   // Send welcome email after verification
   async sendWelcomeEmail(email: string, name: string) {
     try {
-      const resend = getResend()
-      if (!resend) {
+      const transporter = getBrevoTransporter()
+      if (!transporter) {
         console.log('📧 Email service not available - skipping welcome email')
         return { success: true, messageId: 'demo-mode' }
       }
 
-      const { data: emailData, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevis.gov.pg>',
-        to: [email],
+      const mailOptions = {
+        from: process.env.BREVO_FROM_EMAIL || 'Joshua <pomalohjoshua@gmail.com>',
+        to: email,
         subject: 'Welcome to SEVIS PORTAL - Email Verified!',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -236,20 +243,17 @@ export const emailService = {
               <p style="color: #6b7280; font-size: 12px; text-align: center;">
                 This is an automated message from SEVIS PORTAL. Please do not reply to this email.
                 <br>
-                For support, contact us at support@sevis.gov.pg
+                For support, contact us at support@ict.gov.pg
               </p>
             </div>
           </div>
         `
-      })
-      
-      if (error) {
-        console.error('📧 Resend welcome email sending failed:', error)
-        return { success: false, error: error.message }
       }
       
-      console.log('📧 Welcome email sent successfully:', emailData?.id)
-      return { success: true, messageId: emailData?.id }
+      const result = await transporter.sendMail(mailOptions)
+      
+      console.log('📧 Welcome email sent successfully:', result.messageId)
+      return { success: true, messageId: result.messageId }
     } catch (error) {
       console.error('📧 Welcome email sending failed:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }

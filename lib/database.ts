@@ -26,10 +26,19 @@ export const userService = {
     national_id: string
     phone: string
     photo_url?: string
+    password_hash?: string
   }) {
+    // Users start as unverified by default
+    const userWithDefaults = {
+      ...userData,
+      role: userData.role || 'user',
+      email_verified: false,
+      phone_verified: false
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .insert([userData])
+      .insert([userWithDefaults])
       .select()
       .single()
     

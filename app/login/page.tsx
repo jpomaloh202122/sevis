@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useAuth } from '@/contexts/AuthContext'
 import { userService } from '@/lib/database'
+import bcrypt from 'bcryptjs'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -32,12 +33,30 @@ export default function LoginPage() {
       const { data: dbUser, error } = await userService.getUserByEmail(formData.email)
       
       if (error || !dbUser) {
-        setError('User not found. Please check your email or register.')
+        setError('Invalid email or password.')
         return
       }
 
-              // User found in database - validate password
-      // In production, you would hash and compare passwords properly
+      // Check if user has a password hash (new registration flow)
+      if (!dbUser.password_hash) {
+        setError('Account created before password system. Please contact support.')
+        return
+      }
+
+      // Verify password
+      const passwordValid = await bcrypt.compare(formData.password, dbUser.password_hash)
+      if (!passwordValid) {
+        setError('Invalid email or password.')
+        return
+      }
+
+      // Check if email is verified
+      if (!dbUser.email_verified) {
+        setError('Please verify your email before logging in. Check your inbox for the verification email.')
+        return
+      }
+
+      // Login successful
       await loginWithUser(dbUser)
       
       // Redirect based on user role

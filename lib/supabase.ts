@@ -13,9 +13,10 @@ export interface Database {
           email: string
           name: string
           role: 'user' | 'admin'
-          national_id: string
+          national_id?: string
           phone: string
           photo_url?: string
+          password_hash?: string
           email_verified?: boolean
           email_verified_at?: string
           phone_verified?: boolean
@@ -29,9 +30,10 @@ export interface Database {
           email: string
           name: string
           role?: 'user' | 'admin'
-          national_id: string
+          national_id?: string
           phone: string
           photo_url?: string
+          password_hash?: string
           email_verified?: boolean
           email_verified_at?: string
           phone_verified?: boolean
@@ -48,6 +50,7 @@ export interface Database {
           national_id?: string
           phone?: string
           photo_url?: string
+          password_hash?: string
           email_verified?: boolean
           email_verified_at?: string
           phone_verified?: boolean

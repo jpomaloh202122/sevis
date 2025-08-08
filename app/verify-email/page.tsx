@@ -68,8 +68,33 @@ function VerifyEmailContent() {
   }
 
   const resendVerification = async () => {
-    // This would typically send a new verification email
-    setMessage('Demo: New verification email would be sent. In production, this would trigger a new email.')
+    try {
+      const email = searchParams.get('email')
+      if (!email) {
+        setMessage('Unable to resend verification: email not found in URL parameters.')
+        return
+      }
+
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email, 
+          name: 'User' // Default name for resend
+        }),
+      })
+
+      if (response.ok) {
+        setMessage('A new verification email has been sent! Please check your inbox and spam folder.')
+      } else {
+        setMessage('Failed to resend verification email. Please try again later.')
+      }
+    } catch (error) {
+      console.error('Resend error:', error)
+      setMessage('An error occurred while resending the verification email.')
+    }
   }
 
   const getStatusIcon = () => {
