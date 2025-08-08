@@ -24,7 +24,7 @@ export default function Hero({ searchQuery, setSearchQuery }: HeroProps) {
           <div className="flex justify-start order-2 lg:order-1">
             <div className="relative w-full max-w-md">
               <Image
-                src="/images/hero/50years.jpg"
+                src="/images/hero/50yrscbg.png"
                 alt="Papua New Guinea 50 Years Celebration"
                 width={400}
                 height={300}
