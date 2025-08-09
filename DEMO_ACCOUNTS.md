@@ -5,14 +5,14 @@ This document provides information about the demo accounts available for testing
 ## Available Demo Accounts
 
 ### Admin Account
-- **Email**: `admin@sevis.gov.pg`
-- **Password**: `pawword`
+- **Email**: `[ADMIN_EMAIL]`
+- **Password**: `[ADMIN_PASSWORD]`
 - **Role**: Administrator
 - **Access**: Admin Dashboard with system statistics and application management
 
 ### User Account
-- **Email**: `user@example.com`
-- **Password**: `pawword`
+- **Email**: `[USER_EMAIL]`
+- **Password**: `[USER_PASSWORD]`
 - **Role**: Citizen/User
 - **Access**: User Dashboard with personal applications and profile management
 
@@ -79,7 +79,7 @@ This document provides information about the demo accounts available for testing
 
 If you encounter login issues:
 
-1. **Check credentials**: Ensure you're using the exact email and password
+1. **Check credentials**: Ensure you're using the exact email and password from your configuration
 2. **Clear browser data**: Clear localStorage if session issues occur
 3. **Check console**: Look for any JavaScript errors in browser console
 4. **Server status**: Ensure the development server is running on port 3001

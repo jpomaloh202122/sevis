@@ -28,11 +28,12 @@ export const userService = {
     photo_url?: string
     password_hash?: string
   }) {
-    // Users start as unverified by default
+    // Users start as verified by default
     const userWithDefaults = {
       ...userData,
       role: userData.role || 'user',
-      email_verified: false,
+      email_verified: true,
+      email_verified_at: new Date().toISOString(),
       phone_verified: false
     }
 

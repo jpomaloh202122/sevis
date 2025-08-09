@@ -26,6 +26,12 @@ yarn-error.log*
 .env*.local
 .env
 
+# Security - Never commit credentials
+**/DEMO_ACCOUNTS_*
+**/demo-accounts.*
+**/*credentials*
+**/*secrets*
+
 # Test files
 test-smtp.js
 test-twilio.js

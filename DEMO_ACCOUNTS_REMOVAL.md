@@ -9,8 +9,8 @@ The demo accounts have been completely removed from the SEVIS PORTAL. All users 
 ### ✅ **Authentication System Updated**
 
 1. **Removed Demo Accounts:**
-   - ❌ `admin@sevis.gov.pg` / `pawword`
-   - ❌ `user@example.com` / `pawword`
+   - ❌ `[ADMIN_EMAIL]` / `[ADMIN_PASSWORD]`
+   - ❌ `[USER_EMAIL]` / `[USER_PASSWORD]`
 
 2. **Updated Login Flow:**
    - ✅ All authentication now goes through database
@@ -67,7 +67,7 @@ The demo accounts have been completely removed from the SEVIS PORTAL. All users 
 If you have existing demo users in your database, run:
 ```sql
 -- Run this in Supabase SQL Editor
-DELETE FROM users WHERE email IN ('admin@sevis.gov.pg', 'user@example.com');
+DELETE FROM users WHERE email IN ('[ADMIN_EMAIL]', '[USER_EMAIL]');
 ```
 
 ## Security Improvements

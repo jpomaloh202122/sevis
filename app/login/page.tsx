@@ -50,11 +50,6 @@ export default function LoginPage() {
         return
       }
 
-      // Check if email is verified
-      if (!dbUser.email_verified) {
-        setError('Please verify your email before logging in. Check your inbox for the verification email.')
-        return
-      }
 
       // Login successful
       await loginWithUser(dbUser)

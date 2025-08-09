@@ -73,7 +73,7 @@ export default function RegisterPage() {
       // Hash password
       const passwordHash = await bcrypt.hash(formData.password, 12)
 
-      // Create user data for database (user will be unverified by default)
+      // Create user data for database (user will be verified by default)
       const userData = {
         email: formData.email,
         name: `${formData.firstName} ${formData.lastName}`,
@@ -84,7 +84,7 @@ export default function RegisterPage() {
         password_hash: passwordHash
       }
 
-      // Try to register user in database (will be created as unverified)
+      // Try to register user in database (will be created as verified)
       try {
         const { data: user, error } = await userService.createUser(userData)
 
@@ -97,24 +97,7 @@ export default function RegisterPage() {
           return
         }
 
-        // Send verification based on method
-        const verificationEndpoint = '/api/auth/send-verification'
-        
-        const verificationData = { email: formData.email, name: `${formData.firstName} ${formData.lastName}` }
-
-        const response = await fetch(verificationEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(verificationData),
-        })
-
-        if (response.ok) {
-          setSuccess(`Account created! Please check your email to verify your account. You cannot log in until your email is verified.`)
-        } else {
-          setSuccess(`Account created! Please check your email to verify your account. You cannot log in until your email is verified.`)
-        }
+        setSuccess(`Account created successfully! You can now log in.`)
       } catch (dbError) {
         setError('Database connection failed. Please try again later.')
       }
