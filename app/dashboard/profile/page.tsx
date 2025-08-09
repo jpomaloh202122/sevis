@@ -81,6 +81,23 @@ export default function ProfilePage() {
     })
   }, [user, router])
 
+  // Add keyboard shortcut for save (Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (isEditing && !isSubmitting) {
+          handleProfileUpdate()
+        }
+      }
+    }
+
+    if (isEditing) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isEditing, isSubmitting])
+
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setProfileData(prev => ({
@@ -97,30 +114,117 @@ export default function ProfilePage() {
     }))
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError('Photo must be smaller than 5MB')
+      return
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please upload a valid image file (JPG, PNG, GIF, or WebP)')
+      return
+    }
 
     setIsUploadingPhoto(true)
     setError('')
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setProfileData(prev => ({
-        ...prev,
-        photoUrl: reader.result as string
-      }))
-      setIsUploadingPhoto(false)
-    }
-    reader.onerror = () => {
+    try {
+      // Convert to base64 for storage
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const photoDataUrl = reader.result as string
+        
+        // Update local state first
+        setProfileData(prev => ({
+          ...prev,
+          photoUrl: photoDataUrl
+        }))
+
+        // Auto-save photo to database if user exists
+        if (user?.id) {
+          try {
+            const { error } = await userService.updateUser(user.id, {
+              photo_url: photoDataUrl,
+              updated_at: new Date().toISOString()
+            })
+
+            if (error) {
+              console.error('Failed to save photo:', error)
+              setError('Photo uploaded but failed to save. Please click Save to try again.')
+            } else {
+              // Update auth context
+              await loginWithUser({ ...user, photoUrl: photoDataUrl })
+              setSuccess('✅ Profile photo updated successfully!')
+              setTimeout(() => setSuccess(''), 3000)
+            }
+          } catch (saveError) {
+            console.error('Photo save error:', saveError)
+            setError('Photo uploaded but failed to save. Please click Save to try again.')
+          }
+        }
+        
+        setIsUploadingPhoto(false)
+      }
+      reader.onerror = () => {
+        setError('Failed to process photo')
+        setIsUploadingPhoto(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
       setError('Failed to upload photo')
       setIsUploadingPhoto(false)
     }
-    reader.readAsDataURL(file)
+  }
+
+  const validateProfileData = () => {
+    const errors = []
+    
+    if (!profileData.firstName.trim()) {
+      errors.push('First name is required')
+    }
+    
+    if (!profileData.lastName.trim()) {
+      errors.push('Last name is required')
+    }
+    
+    if (!profileData.email.trim()) {
+      errors.push('Email address is required')
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+      errors.push('Please enter a valid email address')
+    }
+    
+    if (!profileData.phone.trim()) {
+      errors.push('Phone number is required')
+    } else if (!/^[\d\s\+\-\(\)]+$/.test(profileData.phone)) {
+      errors.push('Please enter a valid phone number')
+    }
+    
+    if (profileData.nationalId && !/^[a-zA-Z0-9]+$/.test(profileData.nationalId.replace(/\s/g, ''))) {
+      errors.push('National ID should only contain letters and numbers')
+    }
+    
+    return errors
   }
 
   const handleProfileUpdate = async () => {
-    if (!user?.id) return
+    if (!user?.id) {
+      setError('User session not found. Please log in again.')
+      return
+    }
+
+    // Validate form data
+    const validationErrors = validateProfileData()
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(', '))
+      return
+    }
 
     setIsSubmitting(true)
     setError('')
@@ -129,28 +233,48 @@ export default function ProfilePage() {
     try {
       const updateData = {
         name: `${profileData.firstName} ${profileData.lastName}`.trim(),
-        email: profileData.email,
-        phone: profileData.phone,
-        national_id: profileData.nationalId,
-        photo_url: profileData.photoUrl
+        email: profileData.email.trim(),
+        phone: profileData.phone.trim(),
+        national_id: profileData.nationalId.trim() || null,
+        photo_url: profileData.photoUrl || null,
+        updated_at: new Date().toISOString()
       }
+
+      console.log('Updating profile with data:', updateData)
 
       const { data: updatedUser, error } = await userService.updateUser(user.id, updateData)
 
       if (error) {
-        setError('Failed to update profile. Please try again.')
+        console.error('Profile update error:', error)
+        if (error.code === '23505') {
+          setError('Email address is already in use by another account.')
+        } else if (error.message?.includes('email')) {
+          setError('Invalid email format.')
+        } else {
+          setError(`Failed to update profile: ${error.message || 'Unknown error'}`)
+        }
+        return
+      }
+
+      if (!updatedUser) {
+        setError('Profile update failed. Please try again.')
         return
       }
 
       // Update the auth context with new user data
-      if (updatedUser) {
-        loginWithUser(updatedUser)
-      }
+      await loginWithUser(updatedUser)
 
-      setSuccess('Profile updated successfully!')
+      setSuccess('✅ Profile updated successfully!')
       setIsEditing(false)
+
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccess('')
+      }, 5000)
+
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+      console.error('Unexpected error:', err)
+      setError('An unexpected error occurred. Please check your connection and try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -251,8 +375,13 @@ export default function ProfilePage() {
         )}
 
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
-            <p className="text-sm text-green-600">{success}</p>
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4 shadow-sm">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm font-medium text-green-800">{success}</p>
+            </div>
           </div>
         )}
 
@@ -275,14 +404,24 @@ export default function ProfilePage() {
                     <button
                       onClick={handleProfileUpdate}
                       disabled={isSubmitting}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-png-red hover:bg-red-700 disabled:opacity-50"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-png-red hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                     >
-                      <CheckIcon className="h-4 w-4 mr-2" />
-                      Save
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={cancelEdit}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      disabled={isSubmitting}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <XMarkIcon className="h-4 w-4 mr-2" />
                       Cancel
@@ -290,6 +429,15 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+              
+              {/* Keyboard shortcut hint */}
+              {isEditing && (
+                <div className="px-6 pb-2">
+                  <p className="text-xs text-gray-500 flex items-center">
+                    💡 Tip: Press <kbd className="px-1.5 py-0.5 text-xs font-mono bg-gray-100 border border-gray-300 rounded">Ctrl+S</kbd> to save quickly
+                  </p>
+                </div>
+              )}
 
               <div className="px-6 py-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -364,16 +512,21 @@ export default function ProfilePage() {
               </div>
               <div className="px-6 py-6">
                 <div className="flex items-center space-x-6">
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 relative">
                     {profileData.photoUrl ? (
                       <img
                         src={profileData.photoUrl}
                         alt="Profile"
-                        className="h-20 w-20 rounded-full object-cover"
+                        className="h-20 w-20 rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
                         <UserIcon className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                    {isUploadingPhoto && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                       </div>
                     )}
                   </div>
@@ -381,16 +534,33 @@ export default function ProfilePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Upload Photo
                     </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      disabled={isUploadingPhoto}
-                      className="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-png-red file:text-white hover:file:bg-red-100 disabled:opacity-50"
-                    />
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handlePhotoUpload}
+                        disabled={isUploadingPhoto}
+                        className="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-png-red file:text-white hover:file:bg-red-700 disabled:opacity-50"
+                      />
+                      {profileData.photoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setProfileData(prev => ({ ...prev, photoUrl: '' }))}
+                          disabled={isUploadingPhoto}
+                          className="px-3 py-1 text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      JPG, PNG or GIF. Max size 5MB.
+                      JPG, PNG, GIF or WebP. Max size 5MB. Recommended: Square image, 400x400px.
                     </p>
+                    {isUploadingPhoto && (
+                      <p className="mt-1 text-xs text-blue-600">
+                        Uploading photo...
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -517,7 +687,26 @@ export default function ProfilePage() {
           <div className="space-y-6">
             {/* Account Summary */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Account Summary</h3>
+              <div className="flex items-center mb-6">
+                <div className="flex-shrink-0 mr-4">
+                  {user.photoUrl ? (
+                    <img 
+                      src={user.photoUrl} 
+                      alt={user.name}
+                      className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                      <UserIcon className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Account Summary</h3>
+                  <p className="text-sm text-gray-600">{user.name}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user.role?.replace('_', ' ')}</p>
+                </div>
+              </div>
               <div className="space-y-3">
                 <div className="flex items-center">
                   <UserIcon className="h-5 w-5 text-gray-400 mr-3" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { getAdminLevel, AdminLevel, enhanceAdminUser } from '@/lib/admin-roles'
 
 interface User {
   id: string
@@ -10,6 +11,7 @@ interface User {
   nationalId: string
   phone: string
   photoUrl?: string
+  admin_level?: AdminLevel
 }
 
 interface AuthContextType {
@@ -63,7 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: userData.role,
         nationalId: userData.national_id || '',
         phone: userData.phone,
-        photoUrl: userData.photo_url
+        photoUrl: userData.photo_url,
+        admin_level: userData.role === 'admin' ? getAdminLevel(userData) : undefined
       }
       
       setUser(user)

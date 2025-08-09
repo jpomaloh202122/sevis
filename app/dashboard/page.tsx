@@ -9,13 +9,16 @@ import {
   ExclamationTriangleIcon,
   PencilIcon,
   ArrowRightIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { applicationService } from '@/lib/database'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ConfirmationModal from '@/components/ConfirmationModal'
+import CityPassCard from '@/components/CityPassCard'
 
 interface Application {
   id: string
@@ -115,6 +118,9 @@ export default function DashboardPage() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [applicationToDelete, setApplicationToDelete] = useState<string | null>(null)
   const { user, logout } = useAuth()
 
   useEffect(() => {
@@ -142,6 +148,46 @@ export default function DashboardPage() {
 
     fetchApplications()
   }, [user?.id])
+
+  const handleDeleteClick = (applicationId: string) => {
+    setApplicationToDelete(applicationId)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!user?.id || !applicationToDelete) return
+
+    setDeleteLoading(applicationToDelete)
+
+    try {
+      const response = await fetch(`/api/applications/${applicationToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      if (response.ok) {
+        setApplications(prev => prev.filter(app => app.id !== applicationToDelete))
+        setShowDeleteModal(false)
+        setApplicationToDelete(null)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete application')
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+      setError('Failed to delete application')
+    } finally {
+      setDeleteLoading(null)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setApplicationToDelete(null)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -276,6 +322,19 @@ export default function DashboardPage() {
                     <div key={application.id} className="px-6 py-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
+                          <div className="flex-shrink-0 mr-3">
+                            {user?.photoUrl ? (
+                              <img 
+                                src={user.photoUrl} 
+                                alt={user.name}
+                                className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                                <UserIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
                           <div className={`p-2 rounded-full ${getStatusColor(application.status)}`}>
                             {getServiceIcon(application.service_name)}
                           </div>
@@ -294,6 +353,18 @@ export default function DashboardPage() {
                           </Link>
                         </div>
                       </div>
+                      {/* Show digital card preview for approved City Pass */}
+                      {application.status === 'completed' && application.service_name === 'City Pass' && (
+                        <div className="mt-4">
+                          <CityPassCard
+                            holderName={`${application.application_data?.firstName || ''} ${application.application_data?.lastName || ''}`.trim()}
+                            referenceNumber={application.reference_number}
+                            userId={application.user_id}
+                            vettedAt={application.application_data?.vetting?.vetted_at}
+                            approvedAt={application.application_data?.approval?.processed_at}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -303,12 +374,21 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link href="/services" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
                   <DocumentTextIcon className="h-6 w-6 text-png-red mr-3" />
                   <div>
                     <p className="font-medium text-gray-900">Apply for New Service</p>
                     <p className="text-sm text-gray-500">Browse available government services</p>
+                  </div>
+                </Link>
+                <Link href="/dashboard/cards" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
+                  <svg className="h-6 w-6 text-png-red mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-gray-900">My Cards</p>
+                    <p className="text-sm text-gray-500">View your approved digital cards</p>
                   </div>
                 </Link>
                 <Link href="/dashboard/profile" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
@@ -353,6 +433,19 @@ export default function DashboardPage() {
                     <div key={application.id} className="px-6 py-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
+                          <div className="flex-shrink-0 mr-3">
+                            {user?.photoUrl ? (
+                              <img 
+                                src={user.photoUrl} 
+                                alt={user.name}
+                                className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                                <UserIcon className="h-6 w-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
                           <div className={`p-2 rounded-full ${getStatusColor(application.status)}`}>
                             {getServiceIcon(application.service_name)}
                           </div>
@@ -432,6 +525,23 @@ export default function DashboardPage() {
                             Contact Support
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteClick(application.id)}
+                          disabled={deleteLoading === application.id}
+                          className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {deleteLoading === application.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                              Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <TrashIcon className="h-4 w-4 mr-2" />
+                              Delete
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -516,6 +626,19 @@ export default function DashboardPage() {
       </div>
 
       <Footer />
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Application"
+        message="Are you sure you want to delete this application? This action cannot be undone and all associated data will be permanently removed."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonColor="red"
+        isLoading={deleteLoading === applicationToDelete}
+      />
     </div>
   )
 } 

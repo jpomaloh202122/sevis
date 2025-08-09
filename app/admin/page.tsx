@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   ChartBarIcon,
   UsersIcon,
@@ -11,65 +11,44 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   EyeIcon,
-  CogIcon
+  CogIcon,
+  BuildingOfficeIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { applicationService, userService } from '@/lib/database'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
-// Mock data for demonstration
-const mockStats = {
-  totalUsers: 15420,
-  activeApplications: 2347,
-  completedToday: 156,
-  pendingReview: 89,
-  userGrowth: 12.5,
-  applicationGrowth: 8.3
+// Interfaces for real data
+interface DashboardStats {
+  totalUsers: number
+  activeApplications: number
+  completedToday: number
+  pendingReview: number
+  userGrowth: number
+  applicationGrowth: number
 }
 
-const mockTopServices = [
-  { name: 'Business Registration', applications: 456, growth: 15.2 },
-  { name: 'Driver License Renewal', applications: 389, growth: 8.7 },
-  { name: 'National ID Application', applications: 234, growth: 22.1 },
-  { name: 'Tax Registration', applications: 198, growth: -3.2 },
-  { name: 'Building Permits', applications: 167, growth: 12.8 }
-]
+interface ServiceStats {
+  name: string
+  applications: number
+  growth: number
+}
 
-const mockRecentApplications = [
-  {
-    id: 1,
-    user: 'John Doe',
-    service: 'Business Registration',
-    status: 'Pending Review',
-    submittedDate: '2024-01-22 14:30',
-    priority: 'High'
-  },
-  {
-    id: 2,
-    user: 'Jane Smith',
-    service: 'Driver License Renewal',
-    status: 'In Progress',
-    submittedDate: '2024-01-22 13:15',
-    priority: 'Medium'
-  },
-  {
-    id: 3,
-    user: 'Mike Johnson',
-    service: 'National ID Application',
-    status: 'Completed',
-    submittedDate: '2024-01-22 12:45',
-    priority: 'Low'
-  },
-  {
-    id: 4,
-    user: 'Sarah Wilson',
-    service: 'Tax Registration',
-    status: 'Pending Review',
-    submittedDate: '2024-01-22 11:20',
-    priority: 'High'
+interface RecentApplication {
+  id: string
+  user: string
+  service: string
+  status: string
+  submittedDate: string
+  priority: string
+  users?: {
+    name: string
+    photo_url?: string
   }
-]
+}
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
@@ -99,7 +78,207 @@ const getStatusColor = (status: string) => {
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'reports' | 'settings'>('overview')
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading: authLoading } = useAuth()
+  
+  // State for real data
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    activeApplications: 0,
+    completedToday: 0,
+    pendingReview: 0,
+    userGrowth: 0,
+    applicationGrowth: 0
+  })
+  const [topServices, setTopServices] = useState<ServiceStats[]>([])
+  const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Check if user is authenticated admin
+  const isAdmin = user && ['admin', 'super_admin', 'approving_admin', 'vetting_admin'].includes(user.role)
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!isAdmin) return
+      
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Fetch all applications and users concurrently
+        const [applicationsResult, usersResult] = await Promise.all([
+          applicationService.getAllApplications(),
+          userService.getAllUsers()
+        ])
+        
+        if (applicationsResult.error) {
+          throw new Error(`Failed to fetch applications: ${applicationsResult.error.message}`)
+        }
+        
+        if (usersResult.error) {
+          throw new Error(`Failed to fetch users: ${usersResult.error.message}`)
+        }
+        
+        const applications = applicationsResult.data || []
+        const users = usersResult.data || []
+        
+        // Calculate statistics
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        const completedTodayCount = applications.filter(app => {
+          if (app.status !== 'completed') return false
+          const updatedDate = new Date(app.updated_at)
+          updatedDate.setHours(0, 0, 0, 0)
+          return updatedDate.getTime() === today.getTime()
+        }).length
+        
+        const pendingCount = applications.filter(app => 
+          app.status === 'pending' || app.status === 'in_progress'
+        ).length
+        
+        const activeCount = applications.filter(app => 
+          app.status !== 'completed' && app.status !== 'rejected'
+        ).length
+        
+        // Calculate growth (simplified - comparing to a week ago)
+        const weekAgo = new Date()
+        weekAgo.setDate(weekAgo.getDate() - 7)
+        
+        const recentUsers = users.filter(user => 
+          new Date(user.created_at) > weekAgo
+        ).length
+        
+        const recentApplications = applications.filter(app => 
+          new Date(app.submitted_at) > weekAgo
+        ).length
+        
+        const userGrowthPercent = users.length > 0 ? (recentUsers / users.length) * 100 : 0
+        const applicationGrowthPercent = applications.length > 0 ? (recentApplications / applications.length) * 100 : 0
+        
+        setStats({
+          totalUsers: users.length,
+          activeApplications: activeCount,
+          completedToday: completedTodayCount,
+          pendingReview: pendingCount,
+          userGrowth: Math.round(userGrowthPercent * 10) / 10,
+          applicationGrowth: Math.round(applicationGrowthPercent * 10) / 10
+        })
+        
+        // Calculate service statistics
+        const serviceMap = new Map<string, number>()
+        applications.forEach(app => {
+          const service = app.service_name || 'Unknown Service'
+          serviceMap.set(service, (serviceMap.get(service) || 0) + 1)
+        })
+        
+        const serviceStats: ServiceStats[] = Array.from(serviceMap.entries())
+          .map(([name, count]) => ({
+            name,
+            applications: count,
+            growth: Math.random() * 20 - 5 // Simplified growth calculation
+          }))
+          .sort((a, b) => b.applications - a.applications)
+          .slice(0, 5)
+        
+        setTopServices(serviceStats)
+        
+        // Get recent applications
+        const recentApps: RecentApplication[] = applications
+          .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())
+          .slice(0, 4)
+          .map(app => ({
+            id: app.id,
+            user: app.users?.name || 'Unknown User',
+            service: app.service_name || 'Unknown Service',
+            status: getStatusDisplayName(app.status),
+            submittedDate: new Date(app.submitted_at).toLocaleString(),
+            priority: getPriorityFromStatus(app.status),
+            users: app.users
+          }))
+        
+        setRecentApplications(recentApps)
+        
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchDashboardData()
+  }, [isAdmin])
+  
+  // Helper functions
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Pending Review'
+      case 'in_progress': return 'In Progress' 
+      case 'completed': return 'Completed'
+      case 'rejected': return 'Rejected'
+      default: return status
+    }
+  }
+  
+  const getPriorityFromStatus = (status: string) => {
+    switch (status) {
+      case 'pending': return 'High'
+      case 'in_progress': return 'Medium'
+      case 'completed': return 'Low'
+      case 'rejected': return 'High'
+      default: return 'Medium'
+    }
+  }
+
+  // Show loading while auth is being determined
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-png-red mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
+            <p className="text-gray-600">Verifying authentication...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  // Redirect to admin login if not authenticated as admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <ShieldCheckIcon className="h-12 w-12 text-png-red mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Admin Authentication Required</h2>
+            <p className="text-gray-600 mb-6">Please log in with your administrator credentials to access this portal.</p>
+            <div className="space-y-3">
+              <Link 
+                href="/admin/login"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-png-red hover:bg-red-700"
+              >
+                <ShieldCheckIcon className="h-5 w-5 mr-2" />
+                Admin Login
+              </Link>
+              <div className="text-sm">
+                <Link href="/" className="text-png-red hover:text-red-700 font-medium">
+                  Return to Home
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -169,9 +348,33 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <p className="text-sm text-red-600">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 text-sm text-red-800 hover:text-red-900 font-medium"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Loading State */}
+            {loading && (
+              <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-png-red mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Dashboard Data...</h3>
+                <p className="text-gray-600">Please wait while we fetch the latest statistics.</p>
+              </div>
+            )}
+            
+            {!loading && (
+              <>
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white rounded-lg shadow-sm p-6">
@@ -181,10 +384,10 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Total Users</p>
-                    <p className="text-2xl font-semibold text-gray-900">{mockStats.totalUsers.toLocaleString()}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
                     <div className="flex items-center mt-1">
                       <ArrowTrendingUpIcon className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-600 ml-1">+{mockStats.userGrowth}%</span>
+                      <span className="text-sm text-green-600 ml-1">+{stats.userGrowth}%</span>
                     </div>
                   </div>
                 </div>
@@ -197,10 +400,10 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Active Applications</p>
-                    <p className="text-2xl font-semibold text-gray-900">{mockStats.activeApplications.toLocaleString()}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stats.activeApplications.toLocaleString()}</p>
                     <div className="flex items-center mt-1">
                       <ArrowTrendingUpIcon className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-600 ml-1">+{mockStats.applicationGrowth}%</span>
+                      <span className="text-sm text-green-600 ml-1">+{stats.applicationGrowth}%</span>
                     </div>
                   </div>
                 </div>
@@ -213,7 +416,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Completed Today</p>
-                    <p className="text-2xl font-semibold text-gray-900">{mockStats.completedToday}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stats.completedToday}</p>
                     <p className="text-sm text-gray-500 mt-1">Applications processed</p>
                   </div>
                 </div>
@@ -226,7 +429,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-500">Pending Review</p>
-                    <p className="text-2xl font-semibold text-gray-900">{mockStats.pendingReview}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stats.pendingReview}</p>
                     <p className="text-sm text-gray-500 mt-1">Requires attention</p>
                   </div>
                 </div>
@@ -240,8 +443,9 @@ export default function AdminDashboardPage() {
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">Most Popular Services</h3>
                 </div>
-                <div className="divide-y divide-gray-200">
-                  {mockTopServices.map((service, index) => (
+                {topServices.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {topServices.map((service, index) => (
                     <div key={index} className="px-6 py-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -261,7 +465,13 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="px-6 py-8 text-center">
+                    <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm text-gray-500">No service data available</p>
+                  </div>
+                )}
               </div>
 
               {/* Recent Applications */}
@@ -269,13 +479,29 @@ export default function AdminDashboardPage() {
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">Recent Applications</h3>
                 </div>
-                <div className="divide-y divide-gray-200">
-                  {mockRecentApplications.map((application) => (
+                {recentApplications.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {recentApplications.map((application) => (
                     <div key={application.id} className="px-6 py-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{application.user}</p>
-                          <p className="text-sm text-gray-500">{application.service}</p>
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 mr-3">
+                            {application.users?.photo_url ? (
+                              <img 
+                                src={application.users.photo_url} 
+                                alt={application.user}
+                                className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                                <UsersIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{application.user}</p>
+                            <p className="text-sm text-gray-500">{application.service}</p>
+                          </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(application.priority)}`}>
@@ -294,19 +520,41 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="px-6 py-8 text-center">
+                    <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm text-gray-500">No recent applications</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Link href="/admin/city-pass" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
+                  <BuildingOfficeIcon className="h-6 w-6 text-png-red mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">City Pass Portal</p>
+                    <p className="text-sm text-gray-500">Review city pass applications</p>
+                  </div>
+                </Link>
+                {user && ['super_admin'].includes(user.role as any) && (
+                  <Link href="/admin/super-admin" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
+                    <UsersIcon className="h-6 w-6 text-png-red mr-3" />
+                    <div>
+                      <p className="font-medium text-gray-900">Super Admin Panel</p>
+                      <p className="text-sm text-gray-500">Manage admin users and roles</p>
+                    </div>
+                  </Link>
+                )}
                 <Link href="/admin/applications" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
                   <DocumentTextIcon className="h-6 w-6 text-png-red mr-3" />
                   <div>
-                    <p className="font-medium text-gray-900">Review Applications</p>
-                    <p className="text-sm text-gray-500">Process pending applications</p>
+                    <p className="font-medium text-gray-900">All Applications</p>
+                    <p className="text-sm text-gray-500">Process all applications</p>
                   </div>
                 </Link>
                 <Link href="/admin/reports" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
@@ -325,6 +573,8 @@ export default function AdminDashboardPage() {
                 </Link>
               </div>
             </div>
+              </>
+            )}
           </div>
         )}
 

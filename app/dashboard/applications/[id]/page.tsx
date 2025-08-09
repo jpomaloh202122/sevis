@@ -17,13 +17,16 @@ import {
   CalendarIcon,
   DocumentIcon,
   EyeIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { applicationService } from '@/lib/database'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ConfirmationModal from '@/components/ConfirmationModal'
+import CityPassCard from '@/components/CityPassCard'
 
 interface Application {
   id: string
@@ -120,6 +123,10 @@ export default function ApplicationDetailsPage() {
   const [application, setApplication] = useState<Application | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showResubmitModal, setShowResubmitModal] = useState(false)
+  const [resubmitLoading, setResubmitLoading] = useState(false)
 
   // Redirect to login if user is not authenticated
   useEffect(() => {
@@ -173,6 +180,74 @@ export default function ApplicationDetailsPage() {
 
     fetchApplication()
   }, [params.id, user?.id])
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!user?.id || !application) return
+
+    setDeleteLoading(true)
+
+    try {
+      const response = await fetch(`/api/applications/${application.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      if (response.ok) {
+        router.push('/dashboard?tab=applications')
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete application')
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+      setError('Failed to delete application')
+    } finally {
+      setDeleteLoading(false)
+      setShowDeleteModal(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+  }
+
+  const handleResubmit = () => {
+    setShowResubmitModal(true)
+  }
+
+  const handleConfirmResubmit = async () => {
+    if (!user?.id || !application) return
+    setResubmitLoading(true)
+    try {
+      const response = await fetch(`/api/applications/${application.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id, status: 'pending' })
+      })
+      if (response.ok) {
+        const updated = await response.json()
+        setApplication(updated.data)
+        setShowResubmitModal(false)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to resubmit application')
+      }
+    } catch (err) {
+      console.error('Resubmit error:', err)
+      setError('Failed to resubmit application')
+    } finally {
+      setResubmitLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -452,6 +527,17 @@ export default function ApplicationDetailsPage() {
               </div>
             </div>
 
+            {/* Digital City Pass Card when approved */}
+            {application.status === 'completed' && (
+              <CityPassCard
+                holderName={`${application.application_data?.firstName || ''} ${application.application_data?.lastName || ''}`.trim()}
+                referenceNumber={application.reference_number}
+                userId={application.user_id}
+                vettedAt={application.application_data?.vetting?.vetted_at}
+                approvedAt={application.application_data?.approval?.processed_at}
+              />
+            )}
+
             {/* Next Steps */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Next Steps</h3>
@@ -476,6 +562,15 @@ export default function ApplicationDetailsPage() {
                     Your application requires additional documentation. Please check the requirements and resubmit.
                   </p>
                 )}
+                {(application.status === 'pending' || application.status === 'rejected') && (
+                  <button
+                    onClick={handleResubmit}
+                    disabled={resubmitLoading}
+                    className="w-full inline-flex items-center justify-center px-4 py-2 border border-png-red text-sm font-medium rounded-md text-white bg-png-red hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {resubmitLoading ? 'Processing...' : 'Submit Application'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -489,11 +584,62 @@ export default function ApplicationDetailsPage() {
                 Contact Support
               </button>
             </div>
+
+            {/* Delete Application */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Application</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Permanently remove this application from your account. This action cannot be undone.
+              </p>
+              <button 
+                onClick={handleDeleteClick}
+                disabled={deleteLoading}
+                className="w-full inline-flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleteLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Delete Application
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <Footer />
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Application"
+        message={`Are you sure you want to delete your ${application?.service_name} application? This action cannot be undone and all associated data will be permanently removed.`}
+        confirmText="Delete Application"
+        cancelText="Cancel"
+        confirmButtonColor="red"
+        isLoading={deleteLoading}
+      />
+
+      {/* Resubmit Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResubmitModal}
+        onClose={() => setShowResubmitModal(false)}
+        onConfirm={handleConfirmResubmit}
+        title="Submit Application"
+        message="Submit your application for review? You’ll be notified about updates."
+        confirmText="Submit"
+        cancelText="Cancel"
+        confirmButtonColor="green"
+        isLoading={resubmitLoading}
+      />
     </div>
   )
 }
