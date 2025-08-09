@@ -235,8 +235,8 @@ export default function ProfilePage() {
         name: `${profileData.firstName} ${profileData.lastName}`.trim(),
         email: profileData.email.trim(),
         phone: profileData.phone.trim(),
-        national_id: profileData.nationalId.trim() || null,
-        photo_url: profileData.photoUrl || null,
+        national_id: profileData.nationalId.trim() || undefined,
+        photo_url: profileData.photoUrl || undefined,
         updated_at: new Date().toISOString()
       }
 

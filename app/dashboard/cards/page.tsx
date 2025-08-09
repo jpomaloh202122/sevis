@@ -175,14 +175,7 @@ export default function CardsPage() {
       tempDiv.appendChild(cardElement)
 
       // Capture the element as canvas
-      const canvas = await html2canvas(cardElement, {
-        backgroundColor: '#ffffff',
-        scale: 2, // Higher quality
-        useCORS: true,
-        allowTaint: true,
-        width: 800,
-        height: 500
-      })
+      const canvas = await html2canvas(cardElement)
 
       // Convert to blob and download
       canvas.toBlob((blob) => {
@@ -387,8 +380,8 @@ export default function CardsPage() {
                     userId={user?.id || ''}
                     holderName={user?.name || ''}
                     referenceNumber={selectedCard.reference_number}
-                    issuedAt={new Date(selectedCard.submitted_at)}
-                    expiresAt={new Date(new Date(selectedCard.submitted_at).setFullYear(new Date(selectedCard.submitted_at).getFullYear() + 1))}
+                    vettedAt={selectedCard.submitted_at}
+                    approvedAt={selectedCard.updated_at}
                   />
                 </div>
 
