@@ -7,6 +7,7 @@ import ServicesGrid from '@/components/ServicesGrid'
 import NewsSection from '@/components/NewsSection'
 import Footer from '@/components/Footer'
 import QuickAccess from '@/components/QuickAccess'
+import ComprehensiveServices from '@/components/ComprehensiveServices'
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -16,7 +17,7 @@ export default function Home() {
       <Header />
       <Hero searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <QuickAccess />
-      <ServicesGrid />
+      <ComprehensiveServices />
       <NewsSection />
       <Footer />
     </main>

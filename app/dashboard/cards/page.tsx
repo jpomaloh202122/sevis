@@ -14,7 +14,8 @@ import {
   ArrowDownTrayIcon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline'
 
 interface Application {
@@ -35,6 +36,7 @@ export default function CardsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedCard, setSelectedCard] = useState<Application | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -199,6 +201,51 @@ export default function CardsPage() {
     }
   }
 
+  const deleteCard = async (application: Application) => {
+    if (!user?.id) return
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this ${getCardTypeName(application.service_name)}? This action cannot be undone.`
+    )
+    
+    if (!confirmed) return
+
+    try {
+      setDeleteLoading(application.id)
+      setError('')
+
+      const response = await fetch(`/api/applications/${application.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete card')
+      }
+
+      // Remove the deleted application from the list
+      setApplications(prev => prev.filter(app => app.id !== application.id))
+      
+      // Close modal if this card was being viewed
+      if (selectedCard?.id === application.id) {
+        setSelectedCard(null)
+      }
+
+      // Success feedback could be added here if needed
+    } catch (error: any) {
+      console.error('Delete card error:', error)
+      setError(`Failed to delete card: ${error.message}`)
+    } finally {
+      setDeleteLoading(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -324,6 +371,18 @@ export default function CardsPage() {
                   >
                     <ArrowDownTrayIcon className="h-4 w-4" />
                   </button>
+                  <button
+                    onClick={() => deleteCard(application)}
+                    disabled={deleteLoading === application.id}
+                    className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete Card"
+                  >
+                    {deleteLoading === application.id ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                    ) : (
+                      <TrashIcon className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
               </div>
             ))}
@@ -386,7 +445,24 @@ export default function CardsPage() {
                 </div>
 
                 {/* Modal Actions */}
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => deleteCard(selectedCard)}
+                    disabled={deleteLoading === selectedCard.id}
+                    className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleteLoading === selectedCard.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <TrashIcon className="h-4 w-4 mr-2" />
+                        Delete Card
+                      </>
+                    )}
+                  </button>
                   <button
                     onClick={() => setSelectedCard(null)}
                     className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"

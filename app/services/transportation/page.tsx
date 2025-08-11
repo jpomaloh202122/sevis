@@ -9,17 +9,30 @@ import Footer from '@/components/Footer'
 
 const transportationServices = [
   {
-    id: 'driver-license',
-    name: 'Driver License',
-    description: 'Apply for or renew your driver license',
+    id: 'drivers-license',
+    name: 'Driver\'s License',
+    description: 'Apply for provisional or full driver\'s license',
+    status: 'Available',
+    priority: 'High',
+    processingTime: '3-6 weeks',
+    requirements: ['National ID', 'Medical Certificate', 'Eye Test', 'Witness ID', 'Proof of Address'],
+    fee: 'K200-K300',
+    icon: TruckIcon,
+    color: 'bg-blue-500',
+    details: 'Apply for provisional or full driver\'s license. Provisional licenses are for new drivers, while full licenses are for experienced drivers upgrading or with foreign licenses.'
+  },
+  {
+    id: 'learners-permit',
+    name: 'Learner\'s Permit',
+    description: 'Apply for your learner\'s driving permit',
     status: 'Available',
     priority: 'High',
     processingTime: '2-3 weeks',
-    requirements: ['National ID', 'Medical Certificate', 'Driving Test', 'Eye Test', 'Application Fee'],
-    fee: 'K150',
+    requirements: ['National ID', 'Birth Certificate', 'Medical Certificate', 'Eye Test', 'Passport Photo'],
+    fee: 'K100',
     icon: TruckIcon,
-    color: 'bg-blue-500',
-    details: 'Driver licenses are required for operating motor vehicles on public roads. Different classes are available for various vehicle types including motorcycles, cars, and commercial vehicles.'
+    color: 'bg-green-600',
+    details: 'A learner\'s permit allows you to practice driving under supervision before taking your full driving test. Required for all new drivers and valid for 12 months.'
   },
   {
     id: 'vehicle-registration',

@@ -332,7 +332,6 @@ export const applicationService = {
       .eq('id', id)
       .eq('user_id', userId)
       .select()
-      .single()
     
     return { data, error }
   },

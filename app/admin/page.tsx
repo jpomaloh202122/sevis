@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   ChartBarIcon,
   UsersIcon,
@@ -13,7 +14,8 @@ import {
   EyeIcon,
   CogIcon,
   BuildingOfficeIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  TruckIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -79,6 +81,7 @@ const getStatusColor = (status: string) => {
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'reports' | 'settings'>('overview')
   const { user, logout, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   
   // State for real data
   const [stats, setStats] = useState<DashboardStats>({
@@ -96,6 +99,12 @@ export default function AdminDashboardPage() {
 
   // Check if user is authenticated admin
   const isAdmin = user && ['admin', 'super_admin', 'approving_admin', 'vetting_admin'].includes(user.role)
+
+  // Handle admin logout
+  const handleLogout = () => {
+    logout()
+    router.push('/admin/login')
+  }
 
   // Fetch dashboard data
   useEffect(() => {
@@ -295,7 +304,7 @@ export default function AdminDashboardPage() {
                          <div className="flex items-center space-x-4">
                <span className="text-sm text-gray-500">Last updated: Today at 9:30 AM</span>
                <button 
-                 onClick={logout}
+                 onClick={handleLogout}
                  className="text-png-red hover:text-red-700 text-sm font-medium"
                >
                  Logout
@@ -539,6 +548,20 @@ export default function AdminDashboardPage() {
                   <div>
                     <p className="font-medium text-gray-900">City Pass Portal</p>
                     <p className="text-sm text-gray-500">Review city pass applications</p>
+                  </div>
+                </Link>
+                <Link href="/admin/learners-permit" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
+                  <TruckIcon className="h-6 w-6 text-png-red mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Learner's Permit Portal</p>
+                    <p className="text-sm text-gray-500">Review learner's permit applications</p>
+                  </div>
+                </Link>
+                <Link href="/admin/drivers-license" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
+                  <TruckIcon className="h-6 w-6 text-png-red mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Driver's License Portal</p>
+                    <p className="text-sm text-gray-500">Review driver's license applications</p>
                   </div>
                 </Link>
                 {user && ['super_admin'].includes(user.role as any) && (

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Bars3Icon, XMarkIcon, UserCircleIcon, UserIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 const navigation = [
@@ -16,10 +17,24 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { user, logout } = useAuth()
+  const router = useRouter()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Check if user is admin
   const isAdmin = user && ['admin', 'super_admin', 'approving_admin', 'vetting_admin'].includes(user.role)
+
+  // Handle logout with appropriate redirect
+  const handleLogout = () => {
+    logout()
+    // Redirect based on user role
+    if (isAdmin) {
+      // Admin users stay on admin login or go to admin login
+      router.push('/admin/login')
+    } else {
+      // Regular users go to home page
+      router.push('/')
+    }
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -170,7 +185,7 @@ export default function Header() {
                              <button 
                                onClick={() => {
                                  setUserMenuOpen(false)
-                                 logout()
+                                 handleLogout()
                                }}
                                className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
                              >
@@ -317,7 +332,7 @@ export default function Header() {
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false)
-                          logout()
+                          handleLogout()
                         }}
                         className="-mx-3 flex items-center w-full rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-red-400 hover:text-red-300 transition-colors"
                       >

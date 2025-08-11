@@ -171,17 +171,6 @@ export default function AdminLoginPage() {
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
-
-            {/* Demo Admin Accounts Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <h4 className="text-sm font-medium text-blue-800 mb-2">Demo Admin Accounts:</h4>
-              <div className="text-xs text-blue-700 space-y-1">
-                <div><strong>Super Admin:</strong> superadmin@sevis.gov / Admin123!</div>
-                <div><strong>Approving Admin:</strong> adminapproval@sevis.gov / Admin123!</div>
-                <div><strong>Vetting Admin:</strong> adminvet@sevis.gov / Admin123!</div>
-                <div><strong>Primary Admin:</strong> admin@sevis.gov.pg / Admin123!</div>
-              </div>
-            </div>
             
             <div>
               <button

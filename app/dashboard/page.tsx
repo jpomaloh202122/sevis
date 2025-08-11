@@ -10,7 +10,8 @@ import {
   PencilIcon,
   ArrowRightIcon,
   BuildingOfficeIcon,
-  TrashIcon
+  TrashIcon,
+  TruckIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -18,7 +19,6 @@ import { applicationService } from '@/lib/database'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import ConfirmationModal from '@/components/ConfirmationModal'
-import CityPassCard from '@/components/CityPassCard'
 
 interface Application {
   id: string
@@ -92,14 +92,25 @@ const getProgressPercentage = (status: string) => {
 }
 
 const getNextStep = (status: string, serviceName: string) => {
+  const isDriverLicense = serviceName.toLowerCase().includes('driver') && serviceName.toLowerCase().includes('license')
+  const isLearnerPermit = serviceName.toLowerCase().includes('learner') || serviceName.toLowerCase().includes('permit')
+  
   switch (status) {
     case 'completed':
+      if (isDriverLicense) return 'Driver\'s license approved and ready for collection'
+      if (isLearnerPermit) return 'Learner\'s permit issued successfully'
       return `${serviceName} has been processed successfully`
     case 'in_progress':
+      if (isDriverLicense) return 'Health and driving history review in progress'
+      if (isLearnerPermit) return 'Medical certificate verification underway'
       return 'Document verification and processing in progress'
     case 'pending':
+      if (isDriverLicense) return 'Document verification will begin within 2 business days'
+      if (isLearnerPermit) return 'Initial document review in progress'
       return 'Awaiting initial review by government officials'
     case 'rejected':
+      if (isDriverLicense) return 'Additional documentation required - check admin feedback'
+      if (isLearnerPermit) return 'Missing documents identified - resubmission needed'
       return 'Application requires additional documentation or corrections'
     default:
       return 'Status update pending'
@@ -109,6 +120,12 @@ const getNextStep = (status: string, serviceName: string) => {
 const getServiceIcon = (serviceName: string) => {
   if (serviceName.toLowerCase().includes('city pass')) {
     return <BuildingOfficeIcon className="h-5 w-5" />
+  }
+  if (serviceName.toLowerCase().includes('learner') || 
+      serviceName.toLowerCase().includes('permit') || 
+      serviceName.toLowerCase().includes('driver') ||
+      serviceName.toLowerCase().includes('license')) {
+    return <TruckIcon className="h-5 w-5" />
   }
   return <DocumentTextIcon className="h-5 w-5" />
 }
@@ -136,6 +153,28 @@ export default function DashboardPage() {
           console.error('Error fetching applications:', error)
           setError('Failed to load applications')
         } else {
+          console.log('Dashboard: Fetched applications for user', user.id, ':', data)
+          console.log('Dashboard: Applications count:', data?.length || 0)
+          data?.forEach((app, index) => {
+            console.log(`Dashboard: App ${index + 1}:`, {
+              id: app.id,
+              service_name: app.service_name,
+              status: app.status,
+              user_id: app.user_id,
+              has_application_data: !!app.application_data,
+              has_personalInfo: !!app.application_data?.personalInfo,
+              personalInfo_keys: app.application_data?.personalInfo ? Object.keys(app.application_data.personalInfo) : 'none'
+            })
+            
+            // Log driver's license specific data
+            if (app.service_name.toLowerCase().includes('driver') && app.service_name.toLowerCase().includes('license')) {
+              console.log(`Dashboard: Driver license app ${index + 1} data:`, {
+                personalInfo: app.application_data?.personalInfo,
+                licenseType: app.application_data?.licenseType,
+                licenseClass: app.application_data?.licenseClass
+              })
+            }
+          })
           setApplications(data || [])
         }
       } catch (err) {
@@ -322,19 +361,6 @@ export default function DashboardPage() {
                     <div key={application.id} className="px-6 py-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 mr-3">
-                            {user?.photoUrl ? (
-                              <img 
-                                src={user.photoUrl} 
-                                alt={user.name}
-                                className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
-                                <UserIcon className="h-5 w-5 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
                           <div className={`p-2 rounded-full ${getStatusColor(application.status)}`}>
                             {getServiceIcon(application.service_name)}
                           </div>
@@ -353,18 +379,6 @@ export default function DashboardPage() {
                           </Link>
                         </div>
                       </div>
-                      {/* Show digital card preview for approved City Pass */}
-                      {application.status === 'completed' && application.service_name === 'City Pass' && (
-                        <div className="mt-4">
-                          <CityPassCard
-                            holderName={`${application.application_data?.firstName || ''} ${application.application_data?.lastName || ''}`.trim()}
-                            referenceNumber={application.reference_number}
-                            userId={application.user_id}
-                            vettedAt={application.application_data?.vetting?.vetted_at}
-                            approvedAt={application.application_data?.approval?.processed_at}
-                          />
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -374,21 +388,12 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link href="/services" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
                   <DocumentTextIcon className="h-6 w-6 text-png-red mr-3" />
                   <div>
                     <p className="font-medium text-gray-900">Apply for New Service</p>
                     <p className="text-sm text-gray-500">Browse available government services</p>
-                  </div>
-                </Link>
-                <Link href="/dashboard/cards" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
-                  <svg className="h-6 w-6 text-png-red mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                  <div>
-                    <p className="font-medium text-gray-900">My Cards</p>
-                    <p className="text-sm text-gray-500">View your approved digital cards</p>
                   </div>
                 </Link>
                 <Link href="/dashboard/profile" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
@@ -433,19 +438,6 @@ export default function DashboardPage() {
                     <div key={application.id} className="px-6 py-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 mr-3">
-                            {user?.photoUrl ? (
-                              <img 
-                                src={user.photoUrl} 
-                                alt={user.name}
-                                className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
-                              />
-                            ) : (
-                              <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
-                                <UserIcon className="h-6 w-6 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
                           <div className={`p-2 rounded-full ${getStatusColor(application.status)}`}>
                             {getServiceIcon(application.service_name)}
                           </div>
@@ -487,22 +479,72 @@ export default function DashboardPage() {
                         <div className="bg-gray-50 rounded-lg p-4 mb-4">
                           <h5 className="text-sm font-medium text-gray-900 mb-2">Application Details</h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="text-gray-500">Name:</span> 
-                              <span className="ml-2 font-medium">{application.application_data.firstName} {application.application_data.lastName}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Category:</span> 
-                              <span className="ml-2 font-medium">{application.application_data.categoryName}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Email:</span> 
-                              <span className="ml-2 font-medium">{application.application_data.email}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Phone:</span> 
-                              <span className="ml-2 font-medium">{application.application_data.phone}</span>
-                            </div>
+                            {/* Driver's License Application Details */}
+                            {(application.service_name.toLowerCase().includes('driver') && application.service_name.toLowerCase().includes('license')) ? (
+                              <>
+                                <div>
+                                  <span className="text-gray-500">Name:</span> 
+                                  <span className="ml-2 font-medium">
+                                    {application.application_data?.personalInfo?.surname || 'N/A'} {application.application_data?.personalInfo?.givenNames || 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">License Type:</span> 
+                                  <span className="ml-2 font-medium">
+                                    {application.application_data?.licenseType ? 
+                                      application.application_data.licenseType.charAt(0).toUpperCase() + application.application_data.licenseType.slice(1) : 'N/A'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Class:</span> 
+                                  <span className="ml-2 font-medium">Class {application.application_data?.licenseClass || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Mobile:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data?.personalInfo?.phoneNumber || 'N/A'}</span>
+                                </div>
+                              </>
+                            ) : (application.service_name.toLowerCase().includes('learner') || application.service_name.toLowerCase().includes('permit')) ? (
+                              /* Learner's Permit Details */
+                              <>
+                                <div>
+                                  <span className="text-gray-500">Name:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.personalInfo?.fullName}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">National ID:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.personalInfo?.nationalId}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Email:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.personalInfo?.email}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Phone:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.personalInfo?.phoneNumber}</span>
+                                </div>
+                              </>
+                            ) : (
+                              /* Other Applications (City Pass, etc.) */
+                              <>
+                                <div>
+                                  <span className="text-gray-500">Name:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.firstName} {application.application_data.lastName}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Category:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.categoryName}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Email:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.email}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Phone:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.phone}</span>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       )}
