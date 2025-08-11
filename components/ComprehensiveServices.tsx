@@ -13,7 +13,14 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
-const g2cServices = [
+interface Service {
+  name: string
+  description: string
+  status: 'available' | 'coming_soon' | 'internal'
+  link: string
+}
+
+const g2cServices: Service[] = [
   {
     name: 'ePassport',
     description: 'Online application, payment, and status tracking for passports, with notifications for collection.',
@@ -88,7 +95,7 @@ const g2cServices = [
   }
 ]
 
-const g2bServices = [
+const g2bServices: Service[] = [
   {
     name: 'GovService Portal',
     description: 'A unified platform for accessing various government services, including forms and applications.',
@@ -127,7 +134,7 @@ const g2bServices = [
   }
 ]
 
-const g2gServices = [
+const g2gServices: Service[] = [
   {
     name: 'eFinance',
     description: 'Real-time access to financial data and reporting across government entities.',
@@ -179,12 +186,7 @@ const g2gServices = [
 ]
 
 interface ServiceCardProps {
-  service: {
-    name: string
-    description: string
-    status: 'available' | 'coming_soon' | 'internal'
-    link: string
-  }
+  service: Service
 }
 
 function ServiceCard({ service }: ServiceCardProps) {
@@ -250,7 +252,7 @@ interface ServiceSectionProps {
   title: string
   subtitle: string
   icon: React.ReactNode
-  services: typeof g2cServices
+  services: Service[]
   defaultExpanded?: boolean
 }
 
