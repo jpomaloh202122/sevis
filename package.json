@@ -4,9 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next scripts/automated-backup.js pre-operation build && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:migrate": "node scripts/automated-backup.js pre-operation db:migrate && node scripts/update-database.js",
+    "db:verify": "node -e \"require('./scripts/update-database.js').verifyMigration()\"",
+    "db:backup": "node scripts/backup-database.js",
+    "db:backup-auto": "node scripts/automated-backup.js",
+    "db:backup-status": "node scripts/automated-backup.js status",
+    "db:backup-cleanup": "node scripts/automated-backup.js cleanup"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",

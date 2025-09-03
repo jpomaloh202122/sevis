@@ -121,6 +121,9 @@ const getServiceIcon = (serviceName: string) => {
   if (serviceName.toLowerCase().includes('city pass')) {
     return <BuildingOfficeIcon className="h-5 w-5" />
   }
+  if (serviceName.toLowerCase().includes('public servant pass')) {
+    return <UserIcon className="h-5 w-5" />
+  }
   if (serviceName.toLowerCase().includes('learner') || 
       serviceName.toLowerCase().includes('permit') || 
       serviceName.toLowerCase().includes('driver') ||
@@ -290,15 +293,29 @@ export default function DashboardPage() {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <DocumentTextIcon className="h-8 w-8 text-png-red" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Applications</p>
+                    <p className="text-sm font-medium text-gray-500">Total</p>
                     <p className="text-2xl font-semibold text-gray-900">{applications.length}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <ExclamationTriangleIcon className="h-8 w-8 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Pending</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {applications.filter(app => app.status === 'pending').length}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -309,7 +326,7 @@ export default function DashboardPage() {
                     <ClockIcon className="h-8 w-8 text-blue-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">In Progress</p>
+                    <p className="text-sm font-medium text-gray-500">Processing</p>
                     <p className="text-2xl font-semibold text-gray-900">
                       {applications.filter(app => app.status === 'in_progress').length}
                     </p>
@@ -522,6 +539,28 @@ export default function DashboardPage() {
                                 <div>
                                   <span className="text-gray-500">Phone:</span> 
                                   <span className="ml-2 font-medium">{application.application_data.personalInfo?.phoneNumber}</span>
+                                </div>
+                              </>
+                            ) : application.service_name.toLowerCase().includes('public servant pass') ? (
+                              /* Public Servant Pass Details */
+                              <>
+                                <div>
+                                  <span className="text-gray-500">Name:</span> 
+                                  <span className="ml-2 font-medium">
+                                    {application.application_data.personalInfo?.firstName} {application.application_data.personalInfo?.lastName}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Public Servant ID:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.employmentInfo?.publicServantId}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Department:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.employmentInfo?.department}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Work Email:</span> 
+                                  <span className="ml-2 font-medium">{application.application_data.employmentInfo?.workEmail}</span>
                                 </div>
                               </>
                             ) : (

@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { MagnifyingGlassIcon, ArrowLeftIcon, DocumentTextIcon, UserIcon, HeartIcon, IdentificationIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, ArrowLeftIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import ApplyNowButton from '@/components/ApplyNowButton'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -14,12 +13,7 @@ const citizenServices = [
     description: 'Apply for or renew your national identification card',
     status: 'Available',
     priority: 'High',
-    processingTime: '2-4 weeks',
-    requirements: ['Birth Certificate', 'Passport Photo', 'Proof of Address'],
-    fee: 'K50',
-    icon: IdentificationIcon,
-    color: 'bg-blue-500',
-    details: 'The National ID is the primary identification document for all Papua New Guinea citizens. It is required for accessing government services, banking, and other official transactions.'
+    processingTime: '2-4 weeks'
   },
   {
     id: 'birth-certificate',
@@ -27,12 +21,7 @@ const citizenServices = [
     description: 'Request a copy of your birth certificate',
     status: 'Available',
     priority: 'High',
-    processingTime: '1-2 weeks',
-    requirements: ['Parent Information', 'Hospital Records', 'Witness Statement'],
-    fee: 'K25',
-    icon: DocumentTextIcon,
-    color: 'bg-green-500',
-    details: 'Birth certificates are essential documents required for school enrollment, passport applications, and other government services.'
+    processingTime: '1-2 weeks'
   },
   {
     id: 'marriage-certificate',
@@ -40,12 +29,7 @@ const citizenServices = [
     description: 'Apply for marriage certificate or registration',
     status: 'Available',
     priority: 'Medium',
-    processingTime: '1-3 weeks',
-    requirements: ['Both Partners Present', 'Witnesses', 'Previous Marriage Documents'],
-    fee: 'K75',
-    icon: HeartIcon,
-    color: 'bg-pink-500',
-    details: 'Marriage certificates are required for legal recognition of marriage, property rights, and family-related government services.'
+    processingTime: '1-3 weeks'
   },
   {
     id: 'passport-services',
@@ -53,12 +37,7 @@ const citizenServices = [
     description: 'Apply for or renew your passport',
     status: 'Available',
     priority: 'High',
-    processingTime: '3-6 weeks',
-    requirements: ['National ID', 'Birth Certificate', 'Passport Photos', 'Application Form'],
-    fee: 'K200',
-    icon: DocumentTextIcon,
-    color: 'bg-purple-500',
-    details: 'Passports are required for international travel and serve as an alternative form of identification within the country.'
+    processingTime: '3-6 weeks'
   },
   {
     id: 'voter-registration',
@@ -66,12 +45,7 @@ const citizenServices = [
     description: 'Register to vote in elections',
     status: 'Available',
     priority: 'Medium',
-    processingTime: '1 week',
-    requirements: ['National ID', 'Proof of Address', 'Age Verification'],
-    fee: 'Free',
-    icon: UserIcon,
-    color: 'bg-orange-500',
-    details: 'Voter registration is mandatory for all eligible citizens to participate in national and local elections.'
+    processingTime: '1 week'
   },
   {
     id: 'city-pass',
@@ -79,12 +53,7 @@ const citizenServices = [
     description: 'Apply for city pass for Property Owners, Students, Employees, and Business Persons',
     status: 'Available',
     priority: 'High',
-    processingTime: '1-2 weeks',
-    requirements: ['National ID', 'Proof of Address', 'Employment/Student/Property Documents', 'Passport Photo'],
-    fee: 'K100',
-    icon: BuildingOfficeIcon,
-    color: 'bg-indigo-500',
-    details: 'City Pass provides access to various city services and facilities for residents, students, employees, and business owners. Different categories available based on your status.'
+    processingTime: '1-2 weeks'
   }
 ]
 
@@ -150,63 +119,29 @@ export default function CitizenServicesPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredServices.map((service) => {
-            const IconComponent = service.icon
             return (
-              <div key={service.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className={`p-3 rounded-lg ${service.color} text-white mr-4`}>
-                      <IconComponent className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
-                        {service.priority} Priority
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-600 mb-4">{service.description}</p>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Processing Time:</span>
-                      <span className="font-medium">{service.processingTime}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Fee:</span>
-                      <span className="font-medium">{service.fee}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Status:</span>
-                      <span className={`font-medium ${service.status === 'Available' ? 'text-green-600' : 'text-red-600'}`}>
-                        {service.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Requirements:</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      {service.requirements.map((req, index) => (
-                        <li key={index} className="flex items-center">
-                          <span className="w-1.5 h-1.5 bg-png-red rounded-full mr-2"></span>
-                          {req}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Details:</h4>
-                    <p className="text-sm text-gray-600">{service.details}</p>
-                  </div>
-
-                  <ApplyNowButton
-                    href={`/services/citizen-services/${service.id}`}
-                    className="w-full bg-png-red text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-center block"
-                  />
+              <div key={service.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
+                    {service.priority} Priority
+                  </span>
                 </div>
+                
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3">{service.description}</p>
+                
+                <div className="text-xs text-gray-500 mb-4">
+                  <div>Processing Time: <span className="font-medium text-gray-700">{service.processingTime}</span></div>
+                  <div>Status: <span className={`font-medium ${service.status === 'Available' ? 'text-green-600' : 'text-red-600'}`}>{service.status}</span></div>
+                </div>
+
+                <Link 
+                  href={`/services/citizen-services/${service.id}`}
+                  className="inline-flex items-center text-png-red hover:text-red-700 text-sm font-medium transition-colors"
+                >
+                  Access Service
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4 ml-1" />
+                </Link>
               </div>
             )
           })}

@@ -111,14 +111,10 @@ export default function CityPassCard({ holderName, referenceNumber, userId, vett
             </div>
           </div>
 
-          {/* Status Badge and User ID */}
-          <div className="flex items-center justify-between">
-            <div className="bg-png-red text-white px-4 py-2 rounded-full font-bold text-sm shadow-md">
-              ✓ VALID
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">User ID</p>
-              <p className="text-sm font-mono font-bold text-gray-700">{userId.slice(-8)}</p>
+          {/* Status Badge */}
+          <div className="flex items-center justify-center">
+            <div className="bg-png-red text-white px-6 py-3 rounded-full font-bold text-lg shadow-md">
+              ✓ AUTHORIZED CITY RESIDENT
             </div>
           </div>
         </div>
@@ -146,6 +142,13 @@ export default function CityPassCard({ holderName, referenceNumber, userId, vett
                   </div>
                 </div>
               )}
+            </div>
+            
+            <div className="mt-4">
+              <p className="text-xs text-gray-500 mb-2">Reference</p>
+              <p className="text-sm font-mono font-bold text-gray-700 bg-white px-2 py-1 rounded">
+                {referenceNumber}
+              </p>
             </div>
             
             {qrDataUrl && (

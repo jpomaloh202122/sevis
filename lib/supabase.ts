@@ -1,7 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_CONFIG } from '@/config/supabase-config'
 
-export const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey)
+export const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+  db: {
+    schema: 'public',
+  },
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true
+  },
+  global: {
+    headers: {
+      'x-client-info': 'sevis-portal'
+    }
+  }
+})
 
 // Database types for TypeScript
 export interface Database {

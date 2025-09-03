@@ -16,7 +16,7 @@ const businessServices = [
     priority: 'High',
     processingTime: '1-2 weeks',
     requirements: ['Business Plan', 'Owner Identification', 'Business Address', 'Registration Fee'],
-    fee: 'K500',
+    // fee: 'K500', // Removed fees
     icon: BuildingOfficeIcon,
     color: 'bg-blue-500',
     details: 'Business registration is mandatory for all commercial enterprises operating in Papua New Guinea. This includes sole proprietorships, partnerships, and corporations.'
@@ -29,7 +29,7 @@ const businessServices = [
     priority: 'High',
     processingTime: '2-3 weeks',
     requirements: ['Business Registration', 'Premises Inspection', 'Health Certificate', 'Fire Safety Certificate'],
-    fee: 'K300',
+    // fee: 'K300', // Removed fees
     icon: DocumentTextIcon,
     color: 'bg-green-500',
     details: 'Trade licenses are required for specific types of businesses including retail, food service, manufacturing, and import/export activities.'
@@ -42,7 +42,7 @@ const businessServices = [
     priority: 'Medium',
     processingTime: '1-4 weeks',
     requirements: ['Business Registration', 'Product Documentation', 'Customs Declaration', 'Shipping Documents'],
-    fee: 'K200',
+    // fee: 'K200', // Removed fees
     icon: TruckIcon,
     color: 'bg-purple-500',
     details: 'Import and export permits are required for international trade activities. Different permits may be needed based on the type of goods being traded.'
@@ -55,7 +55,7 @@ const businessServices = [
     priority: 'High',
     processingTime: '2-4 weeks',
     requirements: ['Articles of Incorporation', 'Shareholder Information', 'Director Details', 'Registered Office'],
-    fee: 'K1000',
+    // fee: 'K1000', // Removed fees
     icon: BuildingOfficeIcon,
     color: 'bg-orange-500',
     details: 'Company registration is for businesses that want to operate as a separate legal entity. This provides limited liability protection for shareholders.'
@@ -68,7 +68,7 @@ const businessServices = [
     priority: 'High',
     processingTime: '1 week',
     requirements: ['Business Registration', 'Owner Identification', 'Business Address', 'Bank Account Details'],
-    fee: 'Free',
+    // fee: 'Free', // Removed fees
     icon: CalculatorIcon,
     color: 'bg-red-500',
     details: 'Tax registration is mandatory for all businesses to ensure compliance with Papua New Guinea tax laws and regulations.'
@@ -136,67 +136,57 @@ export default function BusinessCommercePage() {
       <div className="bg-gray-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredServices.map((service) => {
-            const IconComponent = service.icon
-            return (
-              <div key={service.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-center mb-4">
-                    <div className={`p-3 rounded-lg ${service.color} text-white mr-4`}>
-                      <IconComponent className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
-                        {service.priority} Priority
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-600 mb-4">{service.description}</p>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Processing Time:</span>
-                      <span className="font-medium">{service.processingTime}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Fee:</span>
-                      <span className="font-medium">{service.fee}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Status:</span>
-                      <span className={`font-medium ${service.status === 'Available' ? 'text-green-600' : 'text-red-600'}`}>
-                        {service.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Requirements:</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      {service.requirements.map((req, index) => (
-                        <li key={index} className="flex items-center">
-                          <span className="w-1.5 h-1.5 bg-png-red rounded-full mr-2"></span>
-                          {req}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Details:</h4>
-                    <p className="text-sm text-gray-600">{service.details}</p>
-                  </div>
-
-                  <ApplyNowButton
-                    href={`/services/business-commerce/${service.id}`}
-                    className="w-full bg-png-red text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-center block"
-                  />
-                </div>
+          {filteredServices.map((service) => (
+            <div key={service.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${service.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {service.status === 'Available' ? (
+                    <>
+                      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Available
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {service.status}
+                    </>
+                  )}
+                </span>
               </div>
-            )
-          })}
+              
+              <p className="text-gray-600 text-sm mb-4 line-clamp-3">{service.description}</p>
+              
+              <div className="mb-4 text-sm">
+                <p className="text-gray-600 mb-2">
+                  <span className="font-medium">Processing Time:</span> {service.processingTime}
+                </p>
+                <p className="text-gray-600">
+                  <span className="font-medium">Priority:</span> {service.priority}
+                </p>
+              </div>
+
+              {service.status === 'Available' ? (
+                <ApplyNowButton
+                  href={`/services/business-commerce/${service.id}`}
+                  className="inline-flex items-center text-png-red hover:text-red-700 text-sm font-medium transition-colors"
+                >
+                  Access Service
+                  <svg className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </ApplyNowButton>
+              ) : (
+                <span className="inline-flex items-center text-gray-400 text-sm font-medium">
+                  Available Soon
+                </span>
+              )}
+            </div>
+          ))}
           </div>
         </div>
       </div>

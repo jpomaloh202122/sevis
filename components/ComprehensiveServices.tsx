@@ -53,7 +53,7 @@ const g2cServices: Service[] = [
   },
   {
     name: 'eEducation',
-    description: 'E-learning platforms, school fee management, statement of results, and enrollment services.',
+    description: 'E-learning platforms, school management, statement of results, and enrollment services.',
     status: 'coming_soon',
     link: '/services/education/e-education'
   },
@@ -77,7 +77,7 @@ const g2cServices: Service[] = [
   },
   {
     name: 'eAgriculture',
-    description: 'Access to farming information, market prices, and agricultural support resources.',
+    description: 'Access to farming information, market data, and agricultural support resources.',
     status: 'coming_soon',
     link: '/services/agriculture/e-agriculture'
   },
@@ -135,6 +135,12 @@ const g2bServices: Service[] = [
 ]
 
 const g2gServices: Service[] = [
+  {
+    name: 'Public Servant Pass',
+    description: 'Digital identity and authentication system for Papua New Guinea government employees. Apply for secure G2G access credentials.',
+    status: 'available',
+    link: '/services/g2g/public-servant-pass'
+  },
   {
     name: 'eFinance',
     description: 'Real-time access to financial data and reporting across government entities.',

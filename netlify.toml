@@ -6,3 +6,11 @@
 
 [build.environment]
   NODE_VERSION = "18"
+
+[functions]
+  timeout = 30
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-cache"

@@ -392,7 +392,7 @@ export default function LearnersPermitApplication() {
         <h4 className="text-sm font-medium text-yellow-900 mb-2">Important Notes:</h4>
         <ul className="text-sm text-yellow-800 space-y-1">
           <li>• Processing time: 2-3 weeks from application submission</li>
-          <li>• Application fee: K100 (payable upon approval)</li>
+          {/* Application fee information removed */}
           <li>• You will be contacted to schedule your written and practical tests</li>
           <li>• Your learner's permit will be valid for 12 months</li>
         </ul>

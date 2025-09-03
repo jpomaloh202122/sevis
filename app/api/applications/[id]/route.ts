@@ -62,12 +62,37 @@ export async function DELETE(
       )
     }
 
+    // Check if deletion was successful - data should contain the deleted record(s)
+    // If data is null or empty, it means no matching record was found (already deleted or access denied)
     if (!data || data.length === 0) {
-      console.log(`No data returned from delete operation for application ${params.id}`)
-      return NextResponse.json(
-        { error: 'Application could not be deleted' },
-        { status: 404 }
-      )
+      console.log(`No data returned from delete operation for application ${params.id} - checking if record exists`)
+      
+      // Double-check if the application still exists
+      const { data: checkApp, error: checkError } = await applicationService.getApplicationById(params.id)
+      
+      if (checkError) {
+        console.error('Error checking application existence:', checkError)
+        return NextResponse.json(
+          { error: 'Failed to verify deletion' },
+          { status: 500 }
+        )
+      }
+      
+      if (!checkApp) {
+        // Application doesn't exist anymore, deletion was successful
+        console.log(`Application ${params.id} successfully deleted (verified by absence)`)
+        return NextResponse.json(
+          { message: 'Application deleted successfully' },
+          { status: 200 }
+        )
+      } else {
+        // Application still exists, deletion failed
+        console.log(`Application ${params.id} still exists after delete attempt`)
+        return NextResponse.json(
+          { error: 'Application could not be deleted' },
+          { status: 500 }
+        )
+      }
     }
 
     console.log(`Successfully deleted application ${params.id}`)

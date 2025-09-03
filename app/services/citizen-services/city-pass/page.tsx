@@ -27,7 +27,7 @@ const cityPassCategories = [
       'Property tax clearance',
       'Passport photo'
     ],
-    fee: 'K150',
+    // fee: 'K150', // Removed fees
     processingTime: '1-2 weeks',
     validity: '2 years'
   },
@@ -51,7 +51,7 @@ const cityPassCategories = [
       'School/University letter',
       'Passport photo'
     ],
-    fee: 'K50',
+    // fee: 'K50', // Removed fees
     processingTime: '3-5 days',
     validity: '1 year'
   },
@@ -75,7 +75,7 @@ const cityPassCategories = [
       'Employer verification',
       'Passport photo'
     ],
-    fee: 'K100',
+    // fee: 'K100', // Removed fees
     processingTime: '1 week',
     validity: '2 years'
   },
@@ -88,7 +88,7 @@ const cityPassCategories = [
     benefits: [
       'Business networking opportunities',
       'Access to business support services',
-      'Reduced business license fees',
+      'Business license support',
       'Access to city business programs',
       'Priority access to city contracts'
     ],
@@ -99,7 +99,7 @@ const cityPassCategories = [
       'Tax clearance certificate',
       'Passport photo'
     ],
-    fee: 'K200',
+    // fee: 'K200', // Removed fees
     processingTime: '1-2 weeks',
     validity: '2 years'
   }
@@ -181,7 +181,7 @@ export default function CityPassPage() {
                   </li>
                   <li className="flex items-start">
                     <span className="bg-png-red text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-2 mt-0.5">3</span>
-                    Submit required documents and pay the fee
+                    Submit required documents
                   </li>
                   <li className="flex items-start">
                     <span className="bg-png-red text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-2 mt-0.5">4</span>
@@ -220,10 +220,7 @@ export default function CityPassPage() {
                     <p className="text-sm text-gray-600 mb-4">{category.description}</p>
                     
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Fee:</span>
-                        <span className="font-medium">{category.fee}</span>
-                      </div>
+                      {/* Fee information removed */}
                       <div className="flex justify-between">
                         <span className="text-gray-500">Processing:</span>
                         <span className="font-medium">{category.processingTime}</span>

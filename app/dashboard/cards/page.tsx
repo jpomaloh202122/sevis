@@ -87,12 +87,18 @@ export default function CardsPage() {
     if (serviceName?.toLowerCase().includes('city pass')) {
       return <CreditCardIcon className="h-6 w-6" />
     }
+    if (serviceName?.toLowerCase().includes('public servant pass')) {
+      return <CreditCardIcon className="h-6 w-6" />
+    }
     return <DocumentTextIcon className="h-6 w-6" />
   }
 
   const getCardTypeName = (serviceName: string) => {
     if (serviceName?.toLowerCase().includes('city pass')) {
       return 'City Pass'
+    }
+    if (serviceName?.toLowerCase().includes('public servant pass')) {
+      return 'Public Servant Pass'
     }
     return 'Digital Card'
   }
@@ -126,54 +132,129 @@ export default function CardsPage() {
       
       // Create a React element for the card
       const cardElement = document.createElement('div')
-      cardElement.innerHTML = `
-        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-          <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-              <div>
-                <h1 style="font-size: 24px; font-weight: bold; margin: 0 0 8px 0;">Papua New Guinea</h1>
-                <p style="font-size: 14px; opacity: 0.9; margin: 0;">${getCardTypeName(application.service_name)}</p>
-              </div>
-              <div style="text-align: right;">
-                <div style="width: 80px; height: 80px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                  <div style="width: 72px; height: 72px; background: #f3f4f6; border-radius: 4px;"></div>
+      
+      if (application.service_name.toLowerCase().includes('public servant pass')) {
+        // Public Servant Pass card layout
+        cardElement.innerHTML = `
+          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                <div>
+                  <h1 style="font-size: 24px; font-weight: bold; margin: 0 0 8px 0;">Papua New Guinea</h1>
+                  <p style="font-size: 14px; opacity: 0.9; margin: 0;">Public Servant Pass</p>
+                  <p style="font-size: 12px; opacity: 0.8; margin: 4px 0 0 0;">Government Employee ID</p>
+                </div>
+                <div style="text-align: right;">
+                  <p style="font-size: 10px; opacity: 0.8; margin: 0 0 4px 0;">Reference Number</p>
+                  <p style="font-size: 14px; font-weight: bold; background: white; background-opacity: 0.2; color: #dc2626; padding: 6px 12px; border-radius: 6px; margin: 0;">
+                    ${application.reference_number}
+                  </p>
                 </div>
               </div>
-            </div>
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-              <div>
-                <div style="margin-bottom: 16px;">
-                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Holder Name</p>
-                  <p style="font-size: 18px; font-weight: 600; margin: 0;">${user?.name || 'N/A'}</p>
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div>
+                  <div style="margin-bottom: 12px;">
+                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Employee Name</p>
+                    <p style="font-size: 18px; font-weight: 600; margin: 0;">${application.application_data?.personalInfo?.firstName || ''} ${application.application_data?.personalInfo?.lastName || ''}</p>
+                  </div>
+                  <div style="margin-bottom: 12px;">
+                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Public Servant ID</p>
+                    <p style="font-size: 14px; font-weight: 500; font-family: monospace; margin: 0;">${application.application_data?.employmentInfo?.publicServantId || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Department</p>
+                    <p style="font-size: 14px; font-weight: 500; margin: 0;">${application.application_data?.employmentInfo?.department || 'N/A'}</p>
+                  </div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="background: white; padding: 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #d1d5db;">
+                    <div style="width: 100px; height: 100px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                      <div style="width: 80px; height: 80px; background: #e5e7eb; border-radius: 4px; position: relative;">
+                        <div style="position: absolute; top: 4px; left: 4px; width: 72px; height: 72px; background: repeating-linear-gradient(0deg, #374151 0px, #374151 2px, #f9fafb 2px, #f9fafb 4px), repeating-linear-gradient(90deg, #374151 0px, #374151 2px, #f9fafb 2px, #f9fafb 4px);"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="text-align: center;">
+                    <p style="font-size: 10px; color: #6b7280; margin: 0 0 4px 0; font-weight: 600;">Reference Number</p>
+                    <p style="font-size: 14px; font-weight: bold; color: #1f2937; font-family: monospace; background: white; padding: 6px 12px; border-radius: 6px; border: 2px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">${application.reference_number}</p>
+                  </div>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
+                <div>
+                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Issued</p>
+                  <p style="font-size: 14px; margin: 0;">${new Date(application.submitted_at).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Reference Number</p>
-                  <p style="font-size: 14px; font-weight: 500; font-family: monospace; margin: 0;">${application.reference_number}</p>
-                </div>
-              </div>
-              <div style="text-align: center;">
-                <div style="background: white; padding: 12px; border-radius: 8px; display: inline-block;">
-                  <div style="width: 100px; height: 100px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">QR Code</div>
+                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Valid Until</p>
+                  <p style="font-size: 14px; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
-              <div>
-                <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Issued</p>
-                <p style="font-size: 14px; margin: 0;">${new Date(application.submitted_at).toLocaleDateString()}</p>
+            <div style="text-align: center; padding: 16px;">
+              <div style="background: #dc2626; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 12px; margin-bottom: 8px;">
+                ✓ AUTHORIZED GOVERNMENT EMPLOYEE
               </div>
-              <div>
-                <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Valid Until</p>
-                <p style="font-size: 14px; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toLocaleDateString()}</p>
-              </div>
+              <p style="font-size: 11px; color: #666; margin: 8px 0 0 0;">This digital pass authorizes access to Papua New Guinea government systems and facilities.</p>
+              <p style="font-size: 10px; color: #999; margin: 4px 0 0 0;">Digital verification available at gov.pg/verify</p>
             </div>
           </div>
-          <div style="text-align: center; padding: 16px;">
-            <p style="font-size: 12px; color: #666; margin: 0;">This is an official digital identification card issued by the Government of Papua New Guinea</p>
-            <p style="font-size: 11px; color: #999; margin: 8px 0 0 0;">Digital verification available at gov.pg/verify</p>
+        `
+      } else {
+        // Default/City Pass card layout
+        cardElement.innerHTML = `
+          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                <div>
+                  <h1 style="font-size: 24px; font-weight: bold; margin: 0 0 8px 0;">Papua New Guinea</h1>
+                  <p style="font-size: 14px; opacity: 0.9; margin: 0;">${getCardTypeName(application.service_name)}</p>
+                </div>
+                <div style="text-align: right;">
+                  <div style="width: 80px; height: 80px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 72px; height: 72px; background: #f3f4f6; border-radius: 4px;"></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div>
+                  <div style="margin-bottom: 16px;">
+                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Holder Name</p>
+                    <p style="font-size: 18px; font-weight: 600; margin: 0;">${user?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Reference Number</p>
+                    <p style="font-size: 14px; font-weight: 500; font-family: monospace; margin: 0;">${application.reference_number}</p>
+                  </div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="background: white; padding: 12px; border-radius: 8px; display: inline-block;">
+                    <div style="width: 100px; height: 100px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">QR Code</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
+                <div>
+                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Issued</p>
+                  <p style="font-size: 14px; margin: 0;">${new Date(application.submitted_at).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Valid Until</p>
+                  <p style="font-size: 14px; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+            <div style="text-align: center; padding: 16px;">
+              <div style="background: #dc2626; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 12px; margin-bottom: 8px;">
+                ✓ AUTHORIZED CITY RESIDENT
+              </div>
+              <p style="font-size: 12px; color: #666; margin: 8px 0 0 0;">This is an official digital identification card issued by the Government of Papua New Guinea</p>
+              <p style="font-size: 11px; color: #999; margin: 4px 0 0 0;">Digital verification available at gov.pg/verify</p>
+            </div>
           </div>
-        </div>
-      `
+        `
+      }
+      
       tempDiv.appendChild(cardElement)
 
       // Capture the element as canvas
@@ -435,13 +516,149 @@ export default function CardsPage() {
 
                 {/* Card Display */}
                 <div className="mb-6">
-                  <CityPassCard
-                    userId={user?.id || ''}
-                    holderName={user?.name || ''}
-                    referenceNumber={selectedCard.reference_number}
-                    vettedAt={selectedCard.submitted_at}
-                    approvedAt={selectedCard.updated_at}
-                  />
+                  {selectedCard.service_name.toLowerCase().includes('public servant pass') ? (
+                    /* Public Servant Pass Card */
+                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-5xl mx-auto overflow-hidden">
+                      {/* Header Section */}
+                      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-png-red to-red-600 text-white">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-bold">Public Servant Pass</h2>
+                            <p className="text-sm opacity-90">Government Employee ID</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs opacity-90 mb-1">Reference Number</p>
+                          <p className="text-lg font-bold bg-white bg-opacity-20 px-3 py-1 rounded-md">
+                            {selectedCard.reference_number}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Main Content */}
+                      <div className="flex">
+                        {/* Left Side - Card Details */}
+                        <div className="flex-1 p-6 space-y-4">
+                          {/* Employee Information */}
+                          <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-png-red">
+                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Employee Name</p>
+                            <p className="text-2xl font-bold text-gray-900 break-words">
+                              {selectedCard.application_data?.personalInfo?.firstName} {selectedCard.application_data?.personalInfo?.lastName}
+                            </p>
+                          </div>
+
+                          {/* Employment Details */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Public Servant ID</p>
+                              <p className="text-lg font-bold text-blue-800 font-mono">
+                                {selectedCard.application_data?.employmentInfo?.publicServantId || 'N/A'}
+                              </p>
+                            </div>
+                            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                              <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Department</p>
+                              <p className="text-lg font-bold text-green-800">
+                                {selectedCard.application_data?.employmentInfo?.department || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Dates and Status */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                              <div className="text-center">
+                                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Issued</p>
+                                <p className="text-sm font-bold text-green-800 mt-1">
+                                  {new Date(selectedCard.submitted_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: '2-digit'
+                                  })}
+                                </p>
+                                <p className="text-lg font-bold text-green-800">
+                                  {new Date(selectedCard.submitted_at).getFullYear()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                              <div className="text-center">
+                                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Expires</p>
+                                <p className="text-sm font-bold text-red-800 mt-1">
+                                  {new Date(new Date(selectedCard.submitted_at).setFullYear(new Date(selectedCard.submitted_at).getFullYear() + 1)).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: '2-digit'
+                                  })}
+                                </p>
+                                <p className="text-lg font-bold text-red-800">
+                                  {new Date(new Date(selectedCard.submitted_at).setFullYear(new Date(selectedCard.submitted_at).getFullYear() + 1)).getFullYear()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="flex items-center justify-center">
+                            <div className="bg-png-red text-white px-6 py-3 rounded-full font-bold text-lg shadow-md">
+                              ✓ AUTHORIZED GOVERNMENT EMPLOYEE
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Side - QR Code Section */}
+                        <div className="w-64 bg-gray-50 p-4 border-l border-gray-200">
+                          <div className="text-center h-full flex flex-col justify-between">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                                Scan for Verification
+                              </p>
+                              <div className="bg-white p-2 rounded-lg border-2 border-gray-300 shadow-sm">
+                                <div className="w-40 h-40 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                                  <div className="w-full h-full bg-gray-50 rounded flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="w-24 h-24 mx-auto mb-2 bg-gray-200 rounded grid grid-cols-8 gap-0.5 p-1">
+                                        {Array.from({ length: 64 }, (_, i) => (
+                                          <div key={i} className={`${Math.random() > 0.5 ? 'bg-gray-800' : 'bg-white'} rounded-sm`}></div>
+                                        ))}
+                                      </div>
+                                      <p className="text-xs text-gray-500 font-medium">QR Verification</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4">
+                              <p className="text-xs text-gray-500 mb-2">Reference</p>
+                              <p className="text-sm font-mono font-bold text-gray-700 bg-white px-2 py-1 rounded">
+                                {selectedCard.reference_number}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                        <p className="text-xs text-gray-600 text-center leading-relaxed">
+                          This digital pass authorizes access to Papua New Guinea government systems and facilities. 
+                          Unauthorized use is prohibited.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    /* City Pass or other cards */
+                    <CityPassCard
+                      userId={user?.id || ''}
+                      holderName={user?.name || ''}
+                      referenceNumber={selectedCard.reference_number}
+                      vettedAt={selectedCard.submitted_at}
+                      approvedAt={selectedCard.updated_at}
+                    />
+                  )}
                 </div>
 
                 {/* Modal Actions */}

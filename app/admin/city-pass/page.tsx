@@ -17,7 +17,8 @@ import {
   IdentificationIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import Link from 'next/link'
@@ -104,11 +105,12 @@ export default function CityPassAdminPage() {
   // Admin actions
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showActionModal, setShowActionModal] = useState(false)
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_info' | null>(null)
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_info' | 'delete' | null>(null)
   const [actionNote, setActionNote] = useState('')
   
-  // Document verification for vetting admins
-  const [verificationLoading, setVerificationLoading] = useState<string | null>(null)
+  // Document verification for vetting admins - more granular loading state
+  const [verificationLoading, setVerificationLoading] = useState<Record<string, boolean>>({})
+  const [lastVerificationCall, setLastVerificationCall] = useState<Record<string, number>>({})
 
   // Check if user has admin access
   const hasAdminAccess = isAdmin(user)
@@ -238,7 +240,7 @@ export default function CityPassAdminPage() {
     }
   }
 
-  const handleActionClick = (action: 'approve' | 'reject' | 'request_info', application: Application) => {
+  const handleActionClick = (action: 'approve' | 'reject' | 'request_info' | 'delete', application: Application) => {
     setSelectedApplication(application)
     setActionType(action)
     setShowActionModal(true)
@@ -282,7 +284,23 @@ export default function CityPassAdminPage() {
       if (response.ok) {
         const responseData = await response.json()
         console.log('Vetting success:', responseData)
-        await fetchApplications()
+        
+        // Optimistically update local state instead of refetching all applications
+        setApplications(prev => prev.map(app => 
+          app.id === application.id 
+            ? { ...app, status: 'in_progress' as const, updated_at: new Date().toISOString() }
+            : app
+        ))
+        
+        // Update selected application if it's the same one
+        if (selectedApplication && selectedApplication.id === application.id) {
+          setSelectedApplication({
+            ...selectedApplication,
+            status: 'in_progress',
+            updated_at: new Date().toISOString()
+          })
+        }
+        
         setError(null)
       } else {
         const errorData = await response.json()
@@ -304,12 +322,73 @@ export default function CityPassAdminPage() {
     console.log('Verified:', verified)
     console.log('User ID:', user?.id)
     
-    setVerificationLoading(applicationId)
+    const loadingKey = `${applicationId}-${documentType}`
+    
+    // Debounce rapid clicks (prevent multiple requests within 500ms)
+    const now = Date.now()
+    const lastCall = lastVerificationCall[loadingKey] || 0
+    if (now - lastCall < 500) {
+      console.log('Debouncing verification request - too soon after last call')
+      return
+    }
+    
+    // If already loading, ignore additional clicks
+    if (verificationLoading[loadingKey]) {
+      console.log('Verification already in progress for this document')
+      return
+    }
+    
+    setLastVerificationCall(prev => ({ ...prev, [loadingKey]: now }))
+    setVerificationLoading(prev => ({ ...prev, [loadingKey]: true }))
+
+    // Optimistically update local state for instant UI feedback
+    const updateLocalVerification = (appId: string, docType: string, isVerified: boolean) => {
+      // Update applications list
+      setApplications(prev => prev.map(app => {
+        if (app.id === appId) {
+          const updatedApp = {
+            ...app,
+            application_data: {
+              ...app.application_data,
+              documentVerifications: {
+                ...app.application_data?.documentVerifications,
+                [`${docType}_verified`]: isVerified,
+                verified_by: user?.id,
+                verified_at: new Date().toISOString()
+              }
+            }
+          }
+          return updatedApp
+        }
+        return app
+      }))
+
+      // Update selected application if it's the same one
+      if (selectedApplication && selectedApplication.id === appId) {
+        const updatedSelectedApp = {
+          ...selectedApplication,
+          application_data: {
+            ...selectedApplication.application_data,
+            documentVerifications: {
+              ...selectedApplication.application_data?.documentVerifications,
+              [`${docType}_verified`]: isVerified,
+              verified_by: user?.id,
+              verified_at: new Date().toISOString()
+            }
+          }
+        }
+        setSelectedApplication(updatedSelectedApp)
+      }
+    }
+
+    // Apply optimistic update immediately
+    updateLocalVerification(applicationId, documentType, verified)
 
     try {
       const verificationData = {
         [`${documentType}_verified`]: verified,
         verified_by: user?.id,
+        admin_name: user?.name,
         verification_notes: verified ? 'Document verified by vetting admin' : 'Document requires review'
       }
       
@@ -328,33 +407,32 @@ export default function CityPassAdminPage() {
       if (response.ok) {
         const responseData = await response.json()
         console.log('Document verification success:', responseData)
-        await fetchApplications()
-        // Update the selected application if it's the same one
-        if (selectedApplication && selectedApplication.id === applicationId) {
-          const updatedApp = applications.find(app => app.id === applicationId)
-          if (updatedApp) {
-            console.log('Updated application after verification:', updatedApp)
-            setSelectedApplication(updatedApp)
-          }
-        }
         setError(null)
+        // Note: We don't call fetchApplications() anymore for better performance
+        // The optimistic update already reflected the change
       } else {
         const errorData = await response.json()
         console.error('Document verification API error:', errorData)
         setError(errorData.error || 'Failed to update document verification')
+        
+        // Revert optimistic update on error
+        updateLocalVerification(applicationId, documentType, !verified)
       }
     } catch (err) {
       console.error('Verification error:', err)
       setError('Failed to update document verification')
+      
+      // Revert optimistic update on error
+      updateLocalVerification(applicationId, documentType, !verified)
     } finally {
-      setVerificationLoading(null)
+      setVerificationLoading(prev => ({ ...prev, [loadingKey]: false }))
     }
   }
 
   const handleActionConfirm = async () => {
     if (!selectedApplication || !actionType) return
 
-    console.log('=== APPROVAL ACTION DEBUG ===')
+    console.log('=== ADMIN ACTION DEBUG ===')
     console.log('Selected Application:', selectedApplication)
     console.log('Action Type:', actionType)
     console.log('Action Note:', actionNote)
@@ -364,56 +442,95 @@ export default function CityPassAdminPage() {
     setActionLoading(selectedApplication.id)
 
     try {
-      let newStatus: 'pending' | 'in_progress' | 'completed' | 'rejected' = selectedApplication.status
+      if (actionType === 'delete') {
+        // Handle deletion separately
+        const response = await fetch(`/api/applications/${selectedApplication.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: selectedApplication.user_id }),
+        })
 
-      switch (actionType) {
-        case 'approve':
-          newStatus = 'completed'
-          break
-        case 'reject':
-          newStatus = 'rejected'
-          break
-        case 'request_info':
-          newStatus = 'pending'
-          break
-      }
+        console.log('Delete response status:', response.status)
 
-      const requestBody = { 
-        status: newStatus,
-        adminNote: actionNote,
-        adminId: user?.id,
-        adminRole: getAdminLevel(user)
-      }
-      
-      console.log('Approval request body:', requestBody)
-
-      const response = await fetch(`/api/admin/applications/${selectedApplication.id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      })
-
-      console.log('Approval response status:', response.status)
-
-      if (response.ok) {
-        const responseData = await response.json()
-        console.log('Approval success:', responseData)
-        await fetchApplications()
-        setShowActionModal(false)
-        setSelectedApplication(null)
-        setActionType(null)
-        setActionNote('')
-        setError(null)
+        if (response.ok) {
+          const responseData = await response.json()
+          console.log('Delete success:', responseData)
+          
+          // Optimistically remove from local state instead of refetching all applications
+          setApplications(prev => prev.filter(app => app.id !== selectedApplication.id))
+          
+          setShowActionModal(false)
+          setSelectedApplication(null)
+          setActionType(null)
+          setActionNote('')
+          setError(null)
+        } else {
+          const errorData = await response.json()
+          console.error('Delete API error:', errorData)
+          setError(errorData.error || 'Failed to delete application')
+        }
       } else {
-        const errorData = await response.json()
-        console.error('Approval API error:', errorData)
-        setError(errorData.error || 'Failed to update application')
+        // Handle status updates
+        let newStatus: 'pending' | 'in_progress' | 'completed' | 'rejected' = selectedApplication.status
+
+        switch (actionType) {
+          case 'approve':
+            newStatus = 'completed'
+            break
+          case 'reject':
+            newStatus = 'rejected'
+            break
+          case 'request_info':
+            newStatus = 'pending'
+            break
+        }
+
+        const requestBody = { 
+          status: newStatus,
+          adminNote: actionNote,
+          adminId: user?.id,
+          adminRole: getAdminLevel(user)
+        }
+        
+        console.log('Status update request body:', requestBody)
+
+        const response = await fetch(`/api/admin/applications/${selectedApplication.id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+        console.log('Status update response status:', response.status)
+
+        if (response.ok) {
+          const responseData = await response.json()
+          console.log('Status update success:', responseData)
+          
+          // Optimistically update local state instead of refetching all applications
+          setApplications(prev => prev.map(app => 
+            app.id === selectedApplication.id 
+              ? { ...app, status: newStatus, updated_at: new Date().toISOString() }
+              : app
+          ))
+          
+          setShowActionModal(false)
+          setSelectedApplication(null)
+          setActionType(null)
+          setActionNote('')
+          setError(null)
+        } else {
+          const errorData = await response.json()
+          console.error('Status update API error:', errorData)
+          setError(errorData.error || 'Failed to update application')
+        }
       }
     } catch (err) {
       console.error('Action error:', err)
-      setError('Failed to update application')
+      setError('Failed to perform action')
     } finally {
       setActionLoading(null)
     }
@@ -441,6 +558,13 @@ export default function CityPassAdminPage() {
           message: `Request additional information from the applicant. Please specify what information is needed.`,
           confirmText: 'Send Request',
           color: 'blue' as const
+        }
+      case 'delete':
+        return {
+          title: 'Delete Application',
+          message: `Are you sure you want to permanently delete this city pass application? This action cannot be undone and all related data will be lost.`,
+          confirmText: 'Delete',
+          color: 'red' as const
         }
       default:
         return {
@@ -737,6 +861,19 @@ export default function CityPassAdminPage() {
                           </>
                         )}
                         
+                        {/* Delete Button - Available to admins */}
+                        {hasAdminAccess && (
+                          <button
+                            onClick={() => handleActionClick('delete', application)}
+                            disabled={actionLoading === application.id}
+                            className="inline-flex items-center px-3 py-1 border border-red-400 text-sm font-medium rounded-md text-red-800 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Permanently delete this application"
+                          >
+                            <TrashIcon className="h-4 w-4 mr-1" />
+                            Delete
+                          </button>
+                        )}
+                        
                         {/* Show workflow status for actions not allowed */}
                         {!canPerformAction(user, application, 'approve') && 
                          !canPerformAction(user, application, 'reject') && 
@@ -900,7 +1037,8 @@ export default function CityPassAdminPage() {
                         else verificationKey = key.replace('Doc', '').replace(/([A-Z])/g, '_$1').toLowerCase()
                         
                         const isVerified = selectedApplication.application_data?.documentVerifications?.[`${verificationKey}_verified`]
-                        
+                        const loadingKey = `${selectedApplication.id}-${verificationKey}`
+                        const isThisDocumentLoading = verificationLoading[loadingKey]
                         
                         return (
                           <div key={key} className="border border-gray-200 rounded-lg p-4">
@@ -927,7 +1065,7 @@ export default function CityPassAdminPage() {
                                     name={`verify-${key}`}
                                     checked={isVerified === true}
                                     onChange={() => handleDocumentVerification(selectedApplication.id, verificationKey, true)}
-                                    disabled={verificationLoading === selectedApplication.id}
+                                    disabled={isThisDocumentLoading}
                                     className="mr-2 text-green-600"
                                   />
                                   <span className="text-sm text-green-600">Verified</span>
@@ -938,12 +1076,12 @@ export default function CityPassAdminPage() {
                                     name={`verify-${key}`}
                                     checked={isVerified === false}
                                     onChange={() => handleDocumentVerification(selectedApplication.id, verificationKey, false)}
-                                    disabled={verificationLoading === selectedApplication.id}
+                                    disabled={isThisDocumentLoading}
                                     className="mr-2 text-red-600"
                                   />
                                   <span className="text-sm text-red-600">Needs Review</span>
                                 </label>
-                                {verificationLoading === selectedApplication.id && (
+                                {isThisDocumentLoading && (
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-png-red"></div>
                                 )}
                               </div>
@@ -1197,18 +1335,24 @@ export default function CityPassAdminPage() {
         confirmButtonColor={modalContent.color}
         isLoading={actionLoading === selectedApplication?.id}
       >
-        {(actionType === 'reject' || actionType === 'request_info') && (
+        {(actionType === 'reject' || actionType === 'request_info' || actionType === 'delete') && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {actionType === 'reject' ? 'Reason for rejection:' : 'Information needed:'}
+              {actionType === 'reject' ? 'Reason for rejection:' : 
+               actionType === 'delete' ? 'Reason for deletion (optional):' : 
+               'Information needed:'}
             </label>
             <textarea
               value={actionNote}
               onChange={(e) => setActionNote(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-png-red focus:border-transparent"
-              placeholder={actionType === 'reject' ? 'Please provide a reason...' : 'Please specify what information is needed...'}
-              required
+              placeholder={
+                actionType === 'reject' ? 'Please provide a reason...' : 
+                actionType === 'delete' ? 'Optional: Reason for deletion...' :
+                'Please specify what information is needed...'
+              }
+              required={actionType !== 'delete'}
             />
           </div>
         )}

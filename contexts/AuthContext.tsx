@@ -1,17 +1,26 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { getAdminLevel, AdminLevel, enhanceAdminUser } from '@/lib/admin-roles'
 
 interface User {
   id: string
   name: string
   email: string
-  role: 'user' | 'admin'
-  nationalId: string
+  role: 'user' | 'admin' | 'super_admin'
+  nationalId?: string
   phone: string
   photoUrl?: string
   admin_level?: AdminLevel
+  provider?: 'database' | 'sevis_pass' | 'digital_id' | 'public_servant_pass'
+  employee_id?: string
+  department?: string
+  position?: string
+  security_clearance?: 'basic' | 'confidential' | 'secret' | 'top_secret'
+  verification_level?: string
+  government_services_access?: string[]
+  employment_status?: 'active' | 'suspended' | 'terminated'
 }
 
 interface AuthContextType {
@@ -27,6 +36,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Check for existing session on mount
@@ -57,16 +67,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     
     try {
-      // Convert database user format to our User interface
+      // Convert user data format to our User interface
       const user: User = {
         id: userData.id,
         name: userData.name,
         email: userData.email,
         role: userData.role,
-        nationalId: userData.national_id || '',
-        phone: userData.phone,
-        photoUrl: userData.photo_url,
-        admin_level: userData.role === 'admin' ? getAdminLevel(userData) : undefined
+        nationalId: userData.national_id || userData.nationalId || '',
+        phone: userData.phone || '',
+        photoUrl: userData.photo_url || userData.photoUrl,
+        admin_level: userData.role === 'admin' || userData.role === 'super_admin' ? getAdminLevel(userData) : undefined,
+        provider: userData.provider || 'database',
+        employee_id: userData.employee_id,
+        department: userData.department,
+        position: userData.position,
+        security_clearance: userData.security_clearance,
+        verification_level: userData.verification_level,
+        government_services_access: userData.government_services_access || [],
+        employment_status: userData.employment_status
+      }
+
+      // Special handling for Public Servant Pass users
+      if (userData.provider === 'public_servant_pass') {
+        // Validate employment status for government employees
+        if (userData.employment_status !== 'active') {
+          throw new Error('Access denied: Employment status is not active')
+        }
       }
       
       setUser(user)
@@ -83,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem('sevis_user')
+    router.push('/')
   }
 
   return (

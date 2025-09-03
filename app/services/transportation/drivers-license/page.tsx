@@ -254,13 +254,13 @@ export default function DriversLicenseApplication() {
   const getProcessingInfo = () => {
     if (formData.licenseType === 'provisional') {
       return {
-        fee: 'K200',
+        // fee: 'K200', // Removed fees
         processingTime: '3-4 weeks',
         description: 'Provisional License Application'
       }
     } else {
       return {
-        fee: 'K300',
+        // fee: 'K300', // Removed fees
         processingTime: '4-6 weeks', 
         description: 'Full Driver\'s License Application'
       }
@@ -426,7 +426,7 @@ export default function DriversLicenseApplication() {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <h4 className="text-sm font-medium text-green-900 mb-2">Selected: {getProcessingInfo().description}</h4>
           <div className="text-sm text-green-800">
-            <p><strong>Fee:</strong> {getProcessingInfo().fee}</p>
+            {/* Fee information removed */}
             <p><strong>Processing Time:</strong> {getProcessingInfo().processingTime}</p>
           </div>
         </div>
@@ -1038,7 +1038,7 @@ export default function DriversLicenseApplication() {
             <p><strong>Mobile:</strong> {formData.personalInfo.mobile}</p>
             <p><strong>Address:</strong> {formData.personalInfo.residentialAddress.street}, {formData.personalInfo.residentialAddress.suburb}</p>
             <p><strong>Nationality:</strong> {formData.personalInfo.nationality}</p>
-            <p><strong>Fee:</strong> {getProcessingInfo().fee}</p>
+            {/* Fee information removed */}
             <p><strong>Processing Time:</strong> {getProcessingInfo().processingTime}</p>
             <p><strong>Witness:</strong> {formData.witness.name}</p>
           </div>

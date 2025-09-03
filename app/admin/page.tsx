@@ -94,6 +94,9 @@ export default function AdminDashboardPage() {
   })
   const [topServices, setTopServices] = useState<ServiceStats[]>([])
   const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([])
+  const [allApplications, setAllApplications] = useState<RecentApplication[]>([])
+  const [selectedApplication, setSelectedApplication] = useState<RecentApplication | null>(null)
+  const [showApplicationModal, setShowApplicationModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -209,6 +212,19 @@ export default function AdminDashboardPage() {
         
         setRecentApplications(recentApps)
         
+        // Set all applications for the applications tab
+        const allApps: RecentApplication[] = applications.map(app => ({
+          id: app.id,
+          user: app.users?.name || 'Unknown User',
+          service: app.service_name || 'Unknown Service',
+          status: getStatusDisplayName(app.status),
+          submittedDate: new Date(app.submitted_at).toLocaleString(),
+          priority: getPriorityFromStatus(app.status),
+          users: app.users
+        }))
+        
+        setAllApplications(allApps)
+        
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
@@ -238,6 +254,64 @@ export default function AdminDashboardPage() {
       case 'completed': return 'Low'
       case 'rejected': return 'High'
       default: return 'Medium'
+    }
+  }
+
+  // Application management functions
+  const handleViewApplication = (application: RecentApplication) => {
+    setSelectedApplication(application)
+    setShowApplicationModal(true)
+  }
+
+  const handleUpdateApplicationStatus = async (applicationId: string, newStatus: 'pending' | 'in_progress' | 'completed' | 'rejected') => {
+    try {
+      const result = await applicationService.updateApplicationStatus(applicationId, newStatus)
+      if (result.error) {
+        throw new Error(result.error.message)
+      }
+      
+      // Refresh applications data
+      const applicationsResult = await applicationService.getAllApplications()
+      if (applicationsResult.data) {
+        const allApps: RecentApplication[] = applicationsResult.data.map(app => ({
+          id: app.id,
+          user: app.users?.name || 'Unknown User',
+          service: app.service_name || 'Unknown Service',
+          status: getStatusDisplayName(app.status),
+          submittedDate: new Date(app.submitted_at).toLocaleString(),
+          priority: getPriorityFromStatus(app.status),
+          users: app.users
+        }))
+        setAllApplications(allApps)
+      }
+      
+      // Close modal if open
+      if (showApplicationModal) {
+        setShowApplicationModal(false)
+        setSelectedApplication(null)
+      }
+    } catch (error) {
+      console.error('Error updating application status:', error)
+      alert('Failed to update application status. Please try again.')
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending Review': return 'bg-yellow-100 text-yellow-800'
+      case 'In Progress': return 'bg-blue-100 text-blue-800'
+      case 'Completed': return 'bg-green-100 text-green-800'
+      case 'Rejected': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'High': return 'bg-red-100 text-red-800'
+      case 'Medium': return 'bg-yellow-100 text-yellow-800'
+      case 'Low': return 'bg-green-100 text-green-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -604,12 +678,135 @@ export default function AdminDashboardPage() {
         {activeTab === 'applications' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">All Applications</h3>
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">All Applications ({allApplications.length})</h3>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <span>Last updated: {new Date().toLocaleString()}</span>
+                </div>
               </div>
-              <div className="p-6">
-                <p className="text-gray-500">Application management interface will be implemented here.</p>
-              </div>
+              
+              {loading ? (
+                <div className="p-6 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-png-red mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading applications...</p>
+                </div>
+              ) : error ? (
+                <div className="p-6 text-center">
+                  <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <p className="text-red-600 mb-4">{error}</p>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-png-red text-white rounded-md hover:bg-red-700"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : allApplications.length === 0 ? (
+                <div className="p-6 text-center">
+                  <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No applications found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Application
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Service
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Priority
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Submitted
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {allApplications.map((application) => (
+                        <tr key={application.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">#{application.id.slice(0, 8)}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8">
+                                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <UsersIcon className="h-4 w-4 text-gray-500" />
+                                </div>
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900">{application.user}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{application.service}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(application.status)}`}>
+                              {application.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(application.priority)}`}>
+                              {application.priority}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {application.submittedDate}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button
+                              onClick={() => handleViewApplication(application)}
+                              className="inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                              <EyeIcon className="h-3 w-3 mr-1" />
+                              View
+                            </button>
+                            {application.status === 'Pending Review' && (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateApplicationStatus(application.id, 'in_progress')}
+                                  className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateApplicationStatus(application.id, 'rejected')}
+                                  className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {application.status === 'In Progress' && (
+                              <button
+                                onClick={() => handleUpdateApplicationStatus(application.id, 'completed')}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700"
+                              >
+                                Complete
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -640,6 +837,106 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Application Details Modal */}
+      {showApplicationModal && selectedApplication && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowApplicationModal(false)}></div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+              <div className="flex items-start justify-between">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Application Details
+                </h3>
+                <button
+                  onClick={() => setShowApplicationModal(false)}
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Application ID</label>
+                    <p className="mt-1 text-sm text-gray-900">#{selectedApplication.id.slice(0, 8)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Service</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedApplication.service}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Applicant</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedApplication.user}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Submitted Date</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedApplication.submittedDate}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Status</label>
+                    <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedApplication.status)}`}>
+                      {selectedApplication.status}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Priority</label>
+                    <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(selectedApplication.priority)}`}>
+                      {selectedApplication.priority}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Quick Actions</h4>
+                  <div className="flex space-x-2">
+                    {selectedApplication.status === 'Pending Review' && (
+                      <>
+                        <button
+                          onClick={() => handleUpdateApplicationStatus(selectedApplication.id, 'in_progress')}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                        >
+                          <CheckCircleIcon className="h-4 w-4 mr-2" />
+                          Approve & Start Processing
+                        </button>
+                        <button
+                          onClick={() => handleUpdateApplicationStatus(selectedApplication.id, 'rejected')}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                        >
+                          <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+                          Reject Application
+                        </button>
+                      </>
+                    )}
+                    {selectedApplication.status === 'In Progress' && (
+                      <button
+                        onClick={() => handleUpdateApplicationStatus(selectedApplication.id, 'completed')}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircleIcon className="h-4 w-4 mr-2" />
+                        Mark as Completed
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowApplicationModal(false)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

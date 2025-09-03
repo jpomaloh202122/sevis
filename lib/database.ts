@@ -273,8 +273,8 @@ export const applicationService = {
     return { data, error }
   },
 
-  // Get all applications (for admin)
-  async getAllApplications() {
+  // Get all applications (for admin) with pagination
+  async getAllApplications(limit: number = 50, offset: number = 0) {
     const { data, error } = await supabase
       .from('applications')
       .select(`
@@ -288,6 +288,7 @@ export const applicationService = {
         )
       `)
       .order('submitted_at', { ascending: false })
+      .range(offset, offset + limit - 1)
     
     return { data, error }
   },
@@ -326,6 +327,7 @@ export const applicationService = {
 
   // Delete application by ID
   async deleteApplication(id: string, userId: string) {
+    // Delete the application and return the deleted record for verification
     const { data, error } = await supabase
       .from('applications')
       .delete()
@@ -333,18 +335,30 @@ export const applicationService = {
       .eq('user_id', userId)
       .select()
     
+    // Log for debugging
+    console.log('Delete operation result:', { data, error, id, userId })
+    
     return { data, error }
   },
 
-  // Update document verification status
+  // Update document verification status (optimized)
   async updateDocumentVerification(applicationId: string, documentVerifications: {
     national_id_verified?: boolean
     address_proof_verified?: boolean
     category_doc_verified?: boolean
     verified_by?: string
     verification_notes?: string
+    verified_at?: string
   }) {
-    // Update application_data with verification status
+    // Optimized: Use PostgreSQL JSONB || operator for efficient merging
+    // This avoids the expensive SELECT + UPDATE pattern
+    const verificationUpdates = {
+      ...documentVerifications,
+      verified_at: documentVerifications.verified_at || new Date().toISOString()
+    }
+
+    // For now, use the simpler approach until we can set up database functions
+    // Get current data first, but do it efficiently with only the needed field
     const { data: currentApp, error: fetchError } = await supabase
       .from('applications')
       .select('application_data')
@@ -353,12 +367,12 @@ export const applicationService = {
 
     if (fetchError) return { data: null, error: fetchError }
 
+    // Merge verification data efficiently
     const updatedData = {
       ...currentApp.application_data,
       documentVerifications: {
-        ...currentApp.application_data.documentVerifications,
-        ...documentVerifications,
-        verified_at: new Date().toISOString()
+        ...currentApp.application_data?.documentVerifications,
+        ...verificationUpdates
       }
     }
 
