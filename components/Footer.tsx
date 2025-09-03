@@ -42,7 +42,7 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="bg-png-black text-png-white">
+    <footer className="bg-png-black dark:bg-gray-950 text-png-white transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Logo and Description */}
@@ -59,10 +59,10 @@ export default function Footer() {
                </div>
                <div>
                  <h3 className="text-xl font-bold text-png-white">SEVIS PORTAL</h3>
-                 <p className="text-sm text-gray-400">Government of PNG</p>
+                 <p className="text-sm text-gray-400 dark:text-gray-500">Government of PNG</p>
                </div>
              </div>
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-400 dark:text-gray-500 text-sm mb-6">
               Your gateway to Papua New Guinea government services. Access public services, 
               apply for permits, and connect with government departments.
             </p>

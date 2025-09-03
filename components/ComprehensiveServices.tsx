@@ -226,16 +226,16 @@ function ServiceCard({ service }: ServiceCardProps) {
   const isAvailable = service.status === 'available'
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md dark:hover:shadow-lg transition-all">
       <div className="flex items-start justify-between mb-3">
-        <h3 className="font-semibold text-gray-900">{service.name}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white">{service.name}</h3>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.textColor}`}>
           {statusInfo.icon}
           <span className="ml-1">{statusInfo.text}</span>
         </span>
       </div>
       
-      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{service.description}</p>
+      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">{service.description}</p>
       
       {isAvailable ? (
         <Link 
@@ -246,7 +246,7 @@ function ServiceCard({ service }: ServiceCardProps) {
           <ArrowTopRightOnSquareIcon className="h-4 w-4 ml-1" />
         </Link>
       ) : (
-        <span className="inline-flex items-center text-gray-400 text-sm font-medium">
+        <span className="inline-flex items-center text-gray-400 dark:text-gray-500 text-sm font-medium">
           {service.status === 'internal' ? 'Admin Access Required' : 'Available Soon'}
         </span>
       )}
@@ -269,32 +269,32 @@ function ServiceSection({ title, subtitle, icon, services, defaultExpanded = fal
   const totalCount = services.length
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full bg-gray-50 hover:bg-gray-100 px-6 py-4 flex items-center justify-between transition-colors"
+        className="w-full bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 px-6 py-4 flex items-center justify-between transition-colors"
       >
         <div className="flex items-center">
           <div className="flex-shrink-0 p-2 bg-png-red rounded-lg text-white mr-4">
             {icon}
           </div>
           <div className="text-left">
-            <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-            <p className="text-gray-600 text-sm mt-1">{subtitle}</p>
-            <p className="text-png-red text-xs mt-1">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">{subtitle}</p>
+            <p className="text-png-red dark:text-png-gold text-xs mt-1">
               {availableCount} of {totalCount} services available
             </p>
           </div>
         </div>
         {isExpanded ? (
-          <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+          <ChevronUpIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         ) : (
-          <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+          <ChevronDownIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         )}
       </button>
       
       {isExpanded && (
-        <div className="p-6 bg-white">
+        <div className="p-6 bg-white dark:bg-gray-900">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service) => (
               <ServiceCard key={service.name} service={service} />
@@ -308,13 +308,13 @@ function ServiceSection({ title, subtitle, icon, services, defaultExpanded = fal
 
 export default function ComprehensiveServices() {
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-gray-50 dark:bg-gray-800 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
             Papua New Guinea Digital Government Services
           </h1>
-          <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             Comprehensive digital transformation enabling efficient service delivery across Government-to-Citizen (G2C), 
             Government-to-Business (G2B), and Government-to-Government (G2G) interactions.
           </p>
@@ -344,10 +344,10 @@ export default function ComprehensiveServices() {
           />
         </div>
 
-        <div className="mt-12 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Get Started?</h3>
-            <p className="text-gray-600 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ready to Get Started?</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               Access available services now or stay updated on upcoming releases.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -359,7 +359,7 @@ export default function ComprehensiveServices() {
               </Link>
               <Link
                 href="/services"
-                className="inline-flex justify-center items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                className="inline-flex justify-center items-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 Browse All Services
               </Link>

@@ -13,7 +13,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header />
       <Hero searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <QuickAccess />

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import ThemeToggle from './ThemeToggle'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -51,7 +52,7 @@ export default function Header() {
   }, [])
 
   return (
-    <header className="bg-black shadow-lg">
+    <header className="bg-black dark:bg-gray-950 shadow-lg transition-colors">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between" aria-label="Global">
         <div className="flex lg:flex-1">
           <Link href="/" className="-m-1.5 p-1.5">
@@ -96,6 +97,7 @@ export default function Header() {
         </div>
                <div className="hidden lg:flex lg:flex-1 lg:justify-end">
                  <div className="flex items-center space-x-4">
+                   <ThemeToggle />
                    {user ? (
                      <>
                        <div className="flex items-center space-x-3">
@@ -217,7 +219,7 @@ export default function Header() {
       {mobileMenuOpen && (
         <div className="lg:hidden">
           <div className="fixed inset-0 z-50" />
-          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-black px-6 py-6 sm:max-w-sm">
+          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-black dark:bg-gray-950 px-6 py-6 sm:max-w-sm transition-colors">
             <div className="flex items-center justify-between">
               <Link href="/" className="-m-1.5 p-1.5">
                 <span className="sr-only">SEVIS PORTAL</span>
@@ -234,14 +236,17 @@ export default function Header() {
                   <span className="text-lg font-bold text-white">SEVIS PORTAL</span>
                 </div>
               </Link>
-              <button
-                type="button"
-                className="-m-2.5 rounded-md p-2.5 text-white hover:text-png-red transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span className="sr-only">Close menu</span>
-                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-              </button>
+              <div className="flex items-center space-x-3">
+                <ThemeToggle />
+                <button
+                  type="button"
+                  className="-m-2.5 rounded-md p-2.5 text-white hover:text-png-red transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="sr-only">Close menu</span>
+                  <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
             </div>
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-gray-500/10">
