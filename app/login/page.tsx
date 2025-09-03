@@ -52,6 +52,7 @@ export default function LoginPage() {
         return
       }
 
+      // Note: Email verification check removed - accounts are only created after verification
 
       // Login successful
       await loginWithUser(dbUser)

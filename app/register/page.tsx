@@ -6,9 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import { userService } from '@/lib/database'
 import { validatePassword } from '@/lib/utils'
-import bcrypt from 'bcryptjs'
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -70,36 +68,32 @@ export default function RegisterPage() {
     setIsSubmitting(true)
 
     try {
-      // Hash password
-      const passwordHash = await bcrypt.hash(formData.password, 12)
-
-      // Create user data for database (user will be verified by default)
-      const userData = {
+      // Prepare registration data
+      const registrationData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`,
-        role: 'user' as const,
-        national_id: formData.nationalId,
         phone: formData.phone,
-        photo_url: '', // Photo is now optional, so set to empty string
-        password_hash: passwordHash
+        nationalId: formData.nationalId,
+        password: formData.password
       }
 
-      // Try to register user in database (will be created as verified)
-      try {
-        const { data: user, error } = await userService.createUser(userData)
+      // Call registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      })
 
-        if (error) {
-          if (error.message.includes('duplicate key')) {
-            setError('An account with this email already exists')
-          } else {
-                    setError('Failed to create account. Please try again.')
-          }
-          return
-        }
+      const data = await response.json()
 
-        setSuccess(`Account created successfully! You can now log in.`)
-      } catch (dbError) {
-        setError('Database connection failed. Please try again later.')
+      if (response.ok) {
+        setSuccess(`Verification code sent to ${formData.email}! Please check your email to complete registration. Account will be created after verification.`)
+      } else {
+        setError(data.error || 'Registration failed. Please try again.')
+        return
       }
       
       // Clear form
@@ -114,10 +108,10 @@ export default function RegisterPage() {
         agreeToTerms: false
       })
 
-      // Redirect to login after 2 seconds
+      // Redirect to verification page after 3 seconds
       setTimeout(() => {
-        router.push('/login')
-      }, 2000)
+        router.push(`/verify-email-code?email=${encodeURIComponent(formData.email)}`)
+      }, 3000)
 
     } catch (err) {
       console.error('Registration error:', err)

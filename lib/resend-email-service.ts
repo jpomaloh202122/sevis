@@ -24,7 +24,7 @@ export const resendEmailService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'SEVIS Portal <noreply@sevisportal.gov.pg>',
+          from: process.env.RESEND_FROM_EMAIL || 'SEVIS Portal <noreply@sevispng.com>',
           to: [data.to],
           subject: data.subject,
           html: data.html,
@@ -53,8 +53,7 @@ export const resendEmailService = {
     }
   },
 
-  async sendVerificationEmail(email: string, name: string, token: string, baseUrl: string) {
-    const verificationUrl = `${baseUrl}/verify-email?token=${token}&email=${encodeURIComponent(email)}`
+  async sendVerificationEmail(email: string, name: string, verificationCode: string, baseUrl: string) {
     
     return this.sendEmail({
       to: email,
@@ -84,24 +83,29 @@ export const resendEmailService = {
               </p>
               
               <p style="color: #374151; line-height: 1.6; margin-bottom: 30px; font-size: 16px;">
-                Thank you for registering with SEVIS PORTAL. To complete your registration and access our government services, please verify your email address by clicking the button below:
+                Thank you for registering with SEVIS PORTAL. To complete your registration and access our government services, please enter the verification code below:
               </p>
               
-              <!-- CTA Button -->
+              <!-- Verification Code Display -->
               <div style="text-align: center; margin: 40px 0;">
-                <a href="${verificationUrl}" 
-                   style="background-color: #dc2626; color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);">
-                  ✓ Verify Email Address
-                </a>
+                <div style="background-color: #f0f9ff; border: 2px solid #3b82f6; padding: 25px; border-radius: 12px; display: inline-block;">
+                  <p style="color: #1e40af; font-size: 14px; margin: 0 0 10px 0; font-weight: 500;">Your Verification Code:</p>
+                  <div style="font-size: 36px; font-weight: bold; color: #dc2626; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+                    ${verificationCode}
+                  </div>
+                </div>
               </div>
               
               <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 30px 0;">
                 <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
-                  <strong>Having trouble with the button?</strong> Copy and paste this link into your browser:
+                  <strong>How to verify:</strong>
                 </p>
-                <p style="color: #6b7280; font-size: 14px; word-break: break-all; margin: 0;">
-                  ${verificationUrl}
-                </p>
+                <ol style="color: #6b7280; font-size: 14px; margin: 0; padding-left: 20px;">
+                  <li>Go to the verification page on SEVIS Portal</li>
+                  <li>Enter your email address</li>
+                  <li>Enter the 6-digit code: <strong>${verificationCode}</strong></li>
+                  <li>Click "Verify Email"</li>
+                </ol>
               </div>
               
               <div style="border-top: 2px solid #e5e7eb; padding-top: 30px; margin-top: 40px;">
@@ -109,14 +113,14 @@ export const resendEmailService = {
                   <strong>What happens next?</strong>
                 </p>
                 <ul style="color: #6b7280; line-height: 1.6; font-size: 14px;">
-                  <li>Click the verification button above</li>
+                  <li>Enter the verification code on the portal</li>
                   <li>Your email will be verified instantly</li>
                   <li>You can then log in to access all SEVIS services</li>
                 </ul>
               </div>
               
               <p style="color: #ef4444; font-size: 14px; margin-top: 30px;">
-                ⏰ <strong>Important:</strong> This verification link expires in 24 hours for security reasons.
+                ⏰ <strong>Important:</strong> This verification code expires in 15 minutes for security reasons.
               </p>
             </div>
             
