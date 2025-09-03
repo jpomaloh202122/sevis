@@ -37,6 +37,7 @@ export default function CardsPage() {
   const [error, setError] = useState('')
   const [selectedCard, setSelectedCard] = useState<Application | null>(null)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -327,6 +328,55 @@ export default function CardsPage() {
     }
   }
 
+  const deleteAllCards = async () => {
+    if (!user?.id) return
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ALL ${applications.length} of your cards/applications? This action cannot be undone and will remove all your digital cards from the system.`
+    )
+    
+    if (!confirmed) return
+
+    try {
+      setBulkDeleteLoading(true)
+      setError('')
+
+      const response = await fetch('/api/applications/bulk-delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          userId: user.id, 
+          deleteScope: 'user'
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete all cards')
+      }
+
+      // Clear all applications from the list
+      setApplications([])
+      
+      // Close modal if any card was being viewed
+      setSelectedCard(null)
+
+      // Show success message
+      const message = `Successfully deleted ${result.deletedCount} card(s)${result.errorCount > 0 ? ` (${result.errorCount} failed)` : ''}`
+      alert(message)
+      
+    } catch (error: any) {
+      console.error('Delete all cards error:', error)
+      setError(`Failed to delete all cards: ${error.message}`)
+    } finally {
+      setBulkDeleteLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -349,9 +399,31 @@ export default function CardsPage() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-2">
-            <CreditCardIcon className="h-8 w-8 text-png-red" />
-            <h1 className="text-3xl font-bold text-gray-900">My Cards</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-3">
+              <CreditCardIcon className="h-8 w-8 text-png-red" />
+              <h1 className="text-3xl font-bold text-gray-900">My Cards</h1>
+            </div>
+            {applications.length > 0 && (
+              <button
+                onClick={deleteAllCards}
+                disabled={bulkDeleteLoading}
+                className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete all your cards/applications"
+              >
+                {bulkDeleteLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                    Deleting All...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Delete All Cards ({applications.length})
+                  </>
+                )}
+              </button>
+            )}
           </div>
           <p className="text-gray-600">View and manage your approved digital cards</p>
         </div>

@@ -638,6 +638,13 @@ export default function AdminDashboardPage() {
                     <p className="text-sm text-gray-500">Review driver's license applications</p>
                   </div>
                 </Link>
+                <Link href="/admin/public-servant-pass" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
+                  <ShieldCheckIcon className="h-6 w-6 text-png-red mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Public Servant Pass</p>
+                    <p className="text-sm text-gray-500">Vet and approve PS Pass applications</p>
+                  </div>
+                </Link>
                 {user && ['super_admin'].includes(user.role as any) && (
                   <Link href="/admin/super-admin" className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-png-red hover:bg-red-50 transition-colors">
                     <UsersIcon className="h-6 w-6 text-png-red mr-3" />

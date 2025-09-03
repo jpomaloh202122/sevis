@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { applicationService } from '@/lib/database'
+import { ApplicationLimitsService } from '@/lib/application-limits-service'
 import type { PublicServantPassFormData, EnhancedApplication } from '@/lib/database-types'
 
 export async function POST(request: NextRequest) {
@@ -61,20 +62,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if Public Servant ID is already registered
-    const existingApplications = await applicationService.getAllApplications()
-    if (existingApplications.data) {
-      const existingPSApplication = existingApplications.data.find((app: any) => 
-        app.service_name === 'Public Servant Pass' && 
-        app.application_data?.employmentInfo?.publicServantId === formData.employmentInfo.publicServantId
+    // Check application limits - one Public Servant Pass per user
+    const limitCheck = await ApplicationLimitsService.checkServiceSpecificLimits(
+      userId, 
+      'Public Servant Pass',
+      formData
+    )
+    
+    if (!limitCheck.canApply) {
+      return NextResponse.json(
+        { 
+          error: limitCheck.reason,
+          suggestedActions: limitCheck.suggestedActions,
+          existingApplication: limitCheck.existingApplication 
+        },
+        { status: 409 }
       )
-      
-      if (existingPSApplication) {
-        return NextResponse.json(
-          { error: 'A Public Servant Pass application already exists for this Public Servant ID' },
-          { status: 409 }
-        )
-      }
     }
 
     // Create application with enhanced data structure

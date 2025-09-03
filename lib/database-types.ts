@@ -235,6 +235,68 @@ export interface CityPassFormData {
   }
 }
 
+export interface SevisPassFormData {
+  personalInfo: {
+    firstName: string
+    lastName: string
+    middleName?: string
+    dateOfBirth: string
+    gender: 'Male' | 'Female' | 'Other'
+    phoneNumber: string
+    email: string
+    nationalId: string
+  }
+  addressInfo: {
+    currentAddress: string
+    province: string
+    district: string
+    postalCode?: string
+    permanentAddress?: string
+    sameAsCurrent?: boolean
+  }
+  educationInfo: {
+    highestEducation: 'Primary' | 'Secondary' | 'Diploma' | 'Bachelors' | 'Masters' | 'PhD' | 'Other'
+    institutionName?: string
+    graduationYear?: string
+    fieldOfStudy?: string
+  }
+  employmentInfo: {
+    employmentStatus: 'Employed' | 'Unemployed' | 'Student' | 'Self-employed' | 'Retired'
+    employer?: string
+    position?: string
+    workAddress?: string
+    monthlyIncome?: string
+  }
+  passportInfo: {
+    hasPassport: boolean
+    passportNumber?: string
+    passportIssueDate?: string
+    passportExpiryDate?: string
+    placeOfIssue?: string
+  }
+  travelInfo: {
+    purposeOfTravel: 'Tourism' | 'Business' | 'Education' | 'Medical' | 'Family Visit' | 'Transit' | 'Other'
+    intendedDestination?: string
+    travelDuration?: string
+    previousInternationalTravel: boolean
+    previousCountries?: string[]
+  }
+  emergencyContact: {
+    name: string
+    relationship: string
+    phone: string
+    email?: string
+    address: string
+  }
+  declarations: {
+    informationAccurate: boolean
+    agreesToTerms: boolean
+    agreesToProcessing: boolean
+    understandsPenalties: boolean
+    notProhibitedFromTravel: boolean
+  }
+}
+
 export interface PublicServantPassFormData {
   personalInfo: {
     firstName: string
