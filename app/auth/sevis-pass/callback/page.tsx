@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { validateSevisPassCallback, exchangeSevisPassCode } from '@/lib/sevis-pass-integration'
 
-export default function SevisPassCallbackPage() {
+function SevisPassCallbackContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -139,5 +139,29 @@ export default function SevisPassCallbackPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-png-red mx-auto mb-4"></div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">
+          Loading Authentication
+        </h2>
+        <p className="text-gray-600">
+          Please wait...
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function SevisPassCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <SevisPassCallbackContent />
+    </Suspense>
   )
 }
