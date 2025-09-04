@@ -155,8 +155,6 @@ export default function CardsPage() {
         const qrDataUrl = await QRCode.toDataURL(JSON.stringify(qrPayload), { 
           width: 300, 
           errorCorrectionLevel: 'M',
-          type: 'image/png',
-          quality: 1,
           margin: 1,
           color: {
             dark: '#000000',
@@ -265,8 +263,6 @@ export default function CardsPage() {
         const cityPassQrDataUrl = await QRCode.toDataURL(JSON.stringify(cityPassQrPayload), { 
           width: 300, 
           errorCorrectionLevel: 'M',
-          type: 'image/png',
-          quality: 1,
           margin: 1,
           color: {
             dark: '#000000',
@@ -397,24 +393,11 @@ export default function CardsPage() {
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      // Capture the element as canvas with enhanced settings for QR codes
+      // Capture the element as canvas
       console.log('Starting canvas capture...')
       const canvas = await html2canvas(cardElement, {
-        scale: 3, // Higher scale for better QR code quality
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: application.service_name.toLowerCase().includes('public servant pass') ? '#ffffff' : '#ffff00',
-        logging: true, // Enable logging for debugging
-        imageTimeout: 15000, // Longer timeout
-        removeContainer: true,
-        onclone: (clonedDoc) => {
-          // Ensure all QR code images are properly set in the cloned document
-          const clonedImages = clonedDoc.querySelectorAll('img')
-          console.log(`Found ${clonedImages.length} images in cloned document`)
-          clonedImages.forEach((img, index) => {
-            console.log(`Cloned image ${index + 1} src:`, img.src.substring(0, 50))
-          })
-        }
+        allowTaint: true
       })
       console.log('Canvas capture completed')
 
