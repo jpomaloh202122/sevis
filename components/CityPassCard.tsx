@@ -47,131 +47,141 @@ export default function CityPassCard({ holderName, referenceNumber, userId, vett
   }, [qrPayload])
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-5xl mx-auto overflow-hidden">
-      {/* Header Section */}
-      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-png-red to-red-600 text-white">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z"/>
-            </svg>
+    <div className="relative bg-yellow-400 rounded-xl shadow-lg border-4 border-black w-full max-w-5xl mx-auto overflow-hidden">
+      {/* PNG National Emblem as full card background */}
+      <div 
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style={{
+          backgroundImage: "url('/images/png-national-emblem.png')",
+          backgroundSize: '60%',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center center',
+          opacity: 0.10
+        }}
+      ></div>
+      {/* Header Section with Yellow/Black Theme */}
+      <div className="relative z-10 flex items-center justify-between px-6 py-4 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black overflow-hidden">
+        
+        <div className="relative z-10 flex items-center space-x-4">
+          <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center p-2 shadow-md border-2 border-black">
+            <img 
+              src="/images/ncdc-logo.jpg" 
+              alt="NCDC Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
-            <h2 className="text-xl font-bold">City Pass</h2>
-            <p className="text-sm opacity-90">Digital Identification Card</p>
+            <h2 className="text-2xl font-black tracking-wider">CITY RESIDENT PASS</h2>
+            <p className="text-sm font-medium italic">Access to Services in Port Moresby City</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs opacity-90 mb-1">Reference Number</p>
-          <p className="text-lg font-bold bg-white bg-opacity-20 px-3 py-1 rounded-md">
+        <div className="relative z-10 text-right">
+          <p className="text-xs font-black uppercase tracking-wide mb-1">Reference Number</p>
+          <p className="text-lg font-black bg-black text-yellow-400 px-4 py-2 rounded-lg border-2 border-white shadow-md">
             {referenceNumber}
           </p>
         </div>
       </div>
 
       {/* Main Content - Optimized Landscape Layout */}
-      <div className="flex">
+      <div className="relative z-10 flex">
         {/* Left Side - Card Details */}
         <div className="flex-1 p-6 space-y-4">
           {/* Card Holder Information */}
-          <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-png-red">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Card Holder</p>
-            <p className="text-2xl font-bold text-gray-900 break-words">{holderName}</p>
+          <div className="bg-yellow-50 rounded-lg p-4 border-l-4 border-black shadow-sm">
+            <p className="text-xs font-black text-black uppercase tracking-wide mb-1">Card Holder</p>
+            <p className="text-2xl font-black text-black break-words">{holderName}</p>
           </div>
 
-          {/* Dates Grid - Compact */}
+          {/* Dates Grid - Yellow/Black Theme */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+            <div className="bg-white rounded-lg p-3 border-2 border-black shadow-md">
               <div className="text-center">
-                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Issued</p>
-                <p className="text-sm font-bold text-green-800 mt-1">
+                <p className="text-xs font-black text-black uppercase tracking-wide">Issued</p>
+                <p className="text-sm font-bold text-yellow-600 mt-1">
                   {new Date(issuedAtIso).toLocaleDateString('en-US', {
                     month: 'short',
                     day: '2-digit'
                   })}
                 </p>
-                <p className="text-lg font-bold text-green-800">
+                <p className="text-lg font-black text-black">
                   {new Date(issuedAtIso).getFullYear()}
                 </p>
               </div>
             </div>
-            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+            <div className="bg-white rounded-lg p-3 border-2 border-black shadow-md">
               <div className="text-center">
-                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Expires</p>
-                <p className="text-sm font-bold text-red-800 mt-1">
+                <p className="text-xs font-black text-black uppercase tracking-wide">Expires</p>
+                <p className="text-sm font-bold text-yellow-600 mt-1">
                   {new Date(expiresAtIso).toLocaleDateString('en-US', {
                     month: 'short',
                     day: '2-digit'
                   })}
                 </p>
-                <p className="text-lg font-bold text-red-800">
+                <p className="text-lg font-black text-black">
                   {new Date(expiresAtIso).getFullYear()}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Status Badge */}
+          {/* Status Badge - Yellow/Black Theme */}
           <div className="flex items-center justify-center">
-            <div className="bg-png-red text-white px-6 py-3 rounded-full font-bold text-lg shadow-md">
+            <div className="bg-black text-yellow-400 px-6 py-3 rounded-full font-black text-lg shadow-lg border-2 border-yellow-400">
               ✓ AUTHORIZED CITY RESIDENT
             </div>
           </div>
         </div>
 
         {/* Right Side - QR Code Section */}
-        <div className="w-64 bg-gray-50 p-4 border-l border-gray-200">
+        <div className="w-64 bg-yellow-50 p-4 border-l-2 border-black">
           <div className="text-center h-full flex flex-col justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+              <p className="text-xs font-black text-black uppercase tracking-wide mb-3">
                 Scan for Verification
               </p>
               {qrDataUrl ? (
-                <div className="bg-white p-2 rounded-lg border-2 border-gray-300 shadow-sm">
+                <div className="bg-white p-2 rounded-lg border-2 border-black shadow-md">
                   <img 
                     src={qrDataUrl} 
-                    alt="City Pass QR Code" 
+                    alt="NCDC City Pass QR Code" 
                     className="w-40 h-40 mx-auto" 
                   />
                 </div>
               ) : (
-                <div className="w-40 h-40 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                <div className="w-40 h-40 mx-auto bg-white border-2 border-black rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-png-red mx-auto mb-1"></div>
-                    <p className="text-xs text-gray-500">Loading...</p>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-1"></div>
+                    <p className="text-xs text-black font-bold">Loading...</p>
                   </div>
                 </div>
               )}
             </div>
             
-            <div className="mt-4">
-              <p className="text-xs text-gray-500 mb-2">Reference</p>
-              <p className="text-sm font-mono font-bold text-gray-700 bg-white px-2 py-1 rounded">
-                {referenceNumber}
-              </p>
-            </div>
-            
             {qrDataUrl && (
-              <a
-                href={qrDataUrl}
-                download={`city-pass-${referenceNumber}.png`}
-                className="mt-3 inline-flex items-center justify-center w-full px-3 py-2 text-xs font-semibold rounded-md text-white bg-png-red hover:bg-red-700 transition-colors"
-              >
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M7 7h10" />
-                </svg>
-                Download QR
-              </a>
+              <div className="mt-3 space-y-2">
+                <a
+                  href={qrDataUrl}
+                  download={`city-resident-pass-qr-${referenceNumber}.png`}
+                  className="inline-flex items-center justify-center w-full px-3 py-2 text-xs font-black rounded-md text-yellow-400 bg-black hover:bg-gray-800 transition-all duration-200 shadow-md border-2 border-yellow-400"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M7 7h10" />
+                  </svg>
+                  Download QR
+                </a>
+                <p className="text-xs text-black font-bold text-center">Card download options available in cards page</p>
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-        <p className="text-xs text-gray-600 text-center leading-relaxed">
-          This digital city pass is valid for identification and city services access. 
-          Keep secure and report issues immediately.
+      <div className="relative z-10 px-6 py-3 bg-yellow-50 border-t-2 border-black">
+        <p className="text-xs text-black text-center leading-relaxed font-bold">
+          This digital CITY RESIDENT PASS is valid for identification and city services access. 
+          Keep secure and report issues immediately to NCDC.
         </p>
       </div>
     </div>

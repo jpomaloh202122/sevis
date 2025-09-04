@@ -7,6 +7,7 @@ import { applicationService } from '@/lib/database'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CityPassCard from '@/components/CityPassCard'
+import PublicServantPassCard from '@/components/PublicServantPassCard'
 import { 
   CreditCardIcon,
   DocumentTextIcon,
@@ -119,138 +120,236 @@ export default function CardsPage() {
     }
   }
 
-  const downloadCard = async (application: Application) => {
+  const downloadCard = async (application: Application, format: 'png' | 'pdf' = 'png') => {
     try {
+      // Import QRCode for generating QR codes
+      const QRCode = (await import('qrcode')).default
+      
       // Create a temporary div to render the card for download
       const tempDiv = document.createElement('div')
       tempDiv.style.position = 'absolute'
       tempDiv.style.left = '-9999px'
-      tempDiv.style.width = '800px' // Fixed width for consistent rendering
+      tempDiv.style.width = '1200px' // Increased width for better quality
       document.body.appendChild(tempDiv)
 
-      // Import html2canvas dynamically for client-side rendering
+      // Import html2canvas and jsPDF dynamically
       const html2canvas = (await import('html2canvas')).default
+      const jsPDF = format === 'pdf' ? (await import('jspdf')).default : null
       
       // Create a React element for the card
       const cardElement = document.createElement('div')
       
       if (application.service_name.toLowerCase().includes('public servant pass')) {
-        // Public Servant Pass card layout
+        // Generate QR code for Public Servant Pass
+        const qrPayload = {
+          type: 'public_servant_pass',
+          ref: application.reference_number,
+          uid: user?.id || '',
+          ps_id: application.application_data?.employmentInfo?.publicServantId || 'N/A',
+          dept: application.application_data?.employmentInfo?.department || 'N/A',
+          issued_at: application.submitted_at,
+          expires_at: new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 5)).toISOString()
+        }
+        
+        // Generate QR code with better settings for embedding
+        const qrDataUrl = await QRCode.toDataURL(JSON.stringify(qrPayload), { 
+          width: 300, 
+          errorCorrectionLevel: 'M',
+          type: 'image/png',
+          quality: 1,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        })
+        
+        // Verify QR code was generated
+        console.log('Public Servant Pass QR Code generated:', qrDataUrl ? 'Success' : 'Failed')
+        if (!qrDataUrl) {
+          throw new Error('Failed to generate Public Servant Pass QR code')
+        }
+        
+        // Public Servant Pass card layout - Using same structure as working City Pass
         cardElement.innerHTML = `
-          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                <div>
-                  <h1 style="font-size: 24px; font-weight: bold; margin: 0 0 8px 0;">Papua New Guinea</h1>
-                  <p style="font-size: 14px; opacity: 0.9; margin: 0;">Public Servant Pass</p>
-                  <p style="font-size: 12px; opacity: 0.8; margin: 4px 0 0 0;">Government Employee ID</p>
+          <div style="background: white; border-radius: 12px; border: 4px solid black; width: 800px; height: 500px; font-family: Arial, sans-serif; position: relative; overflow: hidden;">
+            <!-- PNG National Emblem background -->
+            <div style="position: absolute; inset: 0; background-image: url('/images/png-national-emblem.png'); background-size: 60%; background-repeat: no-repeat; background-position: center center; opacity: 0.10;"></div>
+            <!-- Header Section -->
+            <div style="position: relative; z-index: 10; background: linear-gradient(to right, #ea580c, #c2410c, #ea580c); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="position: relative; z-index: 10; display: flex; align-items: center; gap: 16px;">
+                <div style="width: 64px; height: 64px; background: white; border-radius: 8px; padding: 8px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                  <img src="/images/dict-logo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="DICT Logo" />
                 </div>
-                <div style="text-align: right;">
-                  <p style="font-size: 10px; opacity: 0.8; margin: 0 0 4px 0;">Reference Number</p>
-                  <p style="font-size: 14px; font-weight: bold; background: white; background-opacity: 0.2; color: #dc2626; padding: 6px 12px; border-radius: 6px; margin: 0;">
-                    ${application.reference_number}
-                  </p>
+                <div>
+                  <h2 style="font-size: 24px; font-weight: 900; margin: 0; letter-spacing: 2px;">PUBLIC SERVANT PASS</h2>
+                  <p style="font-size: 14px; margin: 0; font-weight: 500; font-style: italic;">Papua New Guinea Government Employee</p>
                 </div>
               </div>
-              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-                <div>
-                  <div style="margin-bottom: 12px;">
-                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Employee Name</p>
-                    <p style="font-size: 18px; font-weight: 600; margin: 0;">${application.application_data?.personalInfo?.firstName || ''} ${application.application_data?.personalInfo?.lastName || ''}</p>
+              <div style="position: relative; z-index: 10; text-align: right;">
+                <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; margin: 0 0 4px 0;">Reference Number</p>
+                <p style="font-size: 18px; font-weight: 900; background: white; color: #ea580c; padding: 8px 16px; border-radius: 8px; margin: 0; border: 2px solid white;">${application.reference_number}</p>
+              </div>
+            </div>
+
+            <!-- Main Content -->
+            <div style="position: relative; z-index: 10; display: flex; height: calc(100% - 120px);">
+              <!-- Left Side - Card Details -->
+              <div style="flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                <!-- Card Holder -->
+                <div style="background: #fff7ed; padding: 16px; border-radius: 8px; border-left: 4px solid #ea580c;">
+                  <p style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: #ea580c; margin: 0 0 4px 0;">Employee Name</p>
+                  <p style="font-size: 24px; font-weight: 900; color: black; margin: 0; word-break: break-word;">${application.application_data?.personalInfo?.firstName || ''} ${application.application_data?.personalInfo?.lastName || ''}</p>
+                </div>
+
+                <!-- Employment Info -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #ea580c;">
+                    <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #ea580c; margin: 0;">Public Servant ID</p>
+                    <p style="font-size: 14px; font-weight: 700; color: black; margin: 4px 0 0 0; font-family: monospace;">${application.application_data?.employmentInfo?.publicServantId || 'N/A'}</p>
                   </div>
-                  <div style="margin-bottom: 12px;">
-                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Public Servant ID</p>
-                    <p style="font-size: 14px; font-weight: 500; font-family: monospace; margin: 0;">${application.application_data?.employmentInfo?.publicServantId || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Department</p>
-                    <p style="font-size: 14px; font-weight: 500; margin: 0;">${application.application_data?.employmentInfo?.department || 'N/A'}</p>
+                  <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #ea580c;">
+                    <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #ea580c; margin: 0;">Department</p>
+                    <p style="font-size: 12px; font-weight: 700; color: black; margin: 4px 0 0 0;">${application.application_data?.employmentInfo?.department || 'N/A'}</p>
                   </div>
                 </div>
-                <div style="text-align: center;">
-                  <div style="background: white; padding: 12px; border-radius: 8px; display: inline-block; margin-bottom: 12px; border: 2px solid #d1d5db;">
-                    <div style="width: 100px; height: 100px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                      <div style="width: 80px; height: 80px; background: #e5e7eb; border-radius: 4px; position: relative;">
-                        <div style="position: absolute; top: 4px; left: 4px; width: 72px; height: 72px; background: repeating-linear-gradient(0deg, #374151 0px, #374151 2px, #f9fafb 2px, #f9fafb 4px), repeating-linear-gradient(90deg, #374151 0px, #374151 2px, #f9fafb 2px, #f9fafb 4px);"></div>
-                      </div>
-                    </div>
+
+                <!-- Dates -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 2px solid black; text-align: center;">
+                    <p style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: black; margin: 0 0 2px 0;">Issued</p>
+                    <p style="font-size: 12px; font-weight: 700; color: #ea580c; margin: 0;">${new Date(application.submitted_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</p>
                   </div>
-                  <div style="text-align: center;">
-                    <p style="font-size: 10px; color: #6b7280; margin: 0 0 4px 0; font-weight: 600;">Reference Number</p>
-                    <p style="font-size: 14px; font-weight: bold; color: #1f2937; font-family: monospace; background: white; padding: 6px 12px; border-radius: 6px; border: 2px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">${application.reference_number}</p>
+                  <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 2px solid black; text-align: center;">
+                    <p style="font-size: 9px; font-weight: 900; text-transform: uppercase; color: black; margin: 0 0 2px 0;">Expires</p>
+                    <p style="font-size: 12px; font-weight: 700; color: #ea580c; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 5)).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</p>
+                  </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div style="display: flex; justify-content: center; margin-top: auto;">
+                  <div style="background: #ea580c; color: white; padding: 12px 24px; border-radius: 20px; font-weight: 900; font-size: 16px; border: 2px solid #ea580c;">
+                    ✓ AUTHORIZED GOVERNMENT EMPLOYEE
                   </div>
                 </div>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
-                <div>
-                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Issued</p>
-                  <p style="font-size: 14px; margin: 0;">${new Date(application.submitted_at).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Valid Until</p>
-                  <p style="font-size: 14px; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toLocaleDateString()}</p>
+
+              <!-- Right Side - QR Code -->
+              <div style="width: 256px; background: #fff7ed; border-left: 2px solid black; padding: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <p style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: black; margin: 0 0 12px 0; text-align: center;">Scan for Verification</p>
+                <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid black;">
+                  <img src="${qrDataUrl}" style="width: 160px; height: 160px; display: block;" alt="QR Code" />
                 </div>
               </div>
             </div>
-            <div style="text-align: center; padding: 16px;">
-              <div style="background: #dc2626; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 12px; margin-bottom: 8px;">
-                ✓ AUTHORIZED GOVERNMENT EMPLOYEE
-              </div>
-              <p style="font-size: 11px; color: #666; margin: 8px 0 0 0;">This digital pass authorizes access to Papua New Guinea government systems and facilities.</p>
-              <p style="font-size: 10px; color: #999; margin: 4px 0 0 0;">Digital verification available at gov.pg/verify</p>
+
+            <!-- Footer -->
+            <div style="position: relative; z-index: 10; padding: 12px 24px; background: #fff7ed; border-top: 2px solid black;">
+              <p style="font-size: 10px; color: black; text-align: center; margin: 0; font-weight: 700;">
+                This digital PUBLIC SERVANT PASS authorizes access to Papua New Guinea government systems and facilities. Unauthorized use is prohibited.
+              </p>
             </div>
           </div>
         `
       } else {
-        // Default/City Pass card layout
+        // Generate QR code for City Pass
+        const cityPassQrPayload = {
+          type: 'city_pass',
+          ref: application.reference_number,
+          uid: user?.id || '',
+          issued_at: application.submitted_at,
+          expires_at: new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toISOString()
+        }
+        
+        // Generate QR code with better settings for embedding
+        const cityPassQrDataUrl = await QRCode.toDataURL(JSON.stringify(cityPassQrPayload), { 
+          width: 300, 
+          errorCorrectionLevel: 'M',
+          type: 'image/png',
+          quality: 1,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        })
+        
+        // Verify QR code was generated
+        console.log('QR Code generated:', cityPassQrDataUrl ? 'Success' : 'Failed')
+        if (!cityPassQrDataUrl) {
+          throw new Error('Failed to generate QR code')
+        }
+        
+        // City Resident Pass card layout - Simple clean design matching original
         cardElement.innerHTML = `
-          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                <div>
-                  <h1 style="font-size: 24px; font-weight: bold; margin: 0 0 8px 0;">Papua New Guinea</h1>
-                  <p style="font-size: 14px; opacity: 0.9; margin: 0;">${getCardTypeName(application.service_name)}</p>
+          <div style="background: yellow; border-radius: 12px; border: 4px solid black; width: 800px; height: 500px; font-family: Arial, sans-serif; position: relative; overflow: hidden;">
+            <!-- PNG National Emblem background -->
+            <div style="position: absolute; inset: 0; background-image: url('/images/png-national-emblem.png'); background-size: 60%; background-repeat: no-repeat; background-position: center center; opacity: 0.10;"></div>
+            
+            <!-- Header Section -->
+            <div style="position: relative; z-index: 10; background: linear-gradient(to right, #f59e0b, #eab308, #f59e0b); color: black; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+              
+              <div style="position: relative; z-index: 10; display: flex; align-items: center; gap: 16px;">
+                <div style="width: 64px; height: 64px; background: white; border-radius: 8px; padding: 8px; border: 2px solid black; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                  <img src="/images/ncdc-logo.jpg" style="width: 100%; height: 100%; object-fit: contain;" alt="NCDC Logo" />
                 </div>
-                <div style="text-align: right;">
-                  <div style="width: 80px; height: 80px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 72px; height: 72px; background: #f3f4f6; border-radius: 4px;"></div>
+                <div>
+                  <h2 style="font-size: 24px; font-weight: 900; margin: 0; letter-spacing: 2px;">CITY RESIDENT PASS</h2>
+                  <p style="font-size: 14px; margin: 0; font-weight: 500; font-style: italic;">Access to Services in Port Moresby City</p>
+                </div>
+              </div>
+              <div style="position: relative; z-index: 10; text-align: right;">
+                <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; margin: 0 0 4px 0;">Reference Number</p>
+                <p style="font-size: 18px; font-weight: 900; background: black; color: #f59e0b; padding: 8px 16px; border-radius: 8px; margin: 0; border: 2px solid white;">${application.reference_number}</p>
+              </div>
+            </div>
+
+            <!-- Main Content -->
+            <div style="position: relative; z-index: 10; display: flex; height: calc(100% - 120px);">
+              <!-- Left Side - Card Details -->
+              <div style="flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                <!-- Card Holder -->
+                <div style="background: #fef3c7; padding: 16px; border-radius: 8px; border-left: 4px solid black;">
+                  <p style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: black; margin: 0 0 4px 0;">Card Holder</p>
+                  <p style="font-size: 24px; font-weight: 900; color: black; margin: 0; word-break: break-word;">${user?.name || 'N/A'}</p>
+                </div>
+
+                <!-- Dates -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid black; text-align: center;">
+                    <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: black; margin: 0;">Issued</p>
+                    <p style="font-size: 14px; font-weight: 700; color: #f59e0b; margin: 4px 0 0 0;">${new Date(application.submitted_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</p>
+                    <p style="font-size: 18px; font-weight: 900; color: black; margin: 0;">${new Date(application.submitted_at).getFullYear()}</p>
+                  </div>
+                  <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid black; text-align: center;">
+                    <p style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: black; margin: 0;">Expires</p>
+                    <p style="font-size: 14px; font-weight: 700; color: #f59e0b; margin: 4px 0 0 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</p>
+                    <p style="font-size: 18px; font-weight: 900; color: black; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).getFullYear()}</p>
+                  </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div style="display: flex; justify-content: center; margin-top: auto;">
+                  <div style="background: black; color: #f59e0b; padding: 12px 24px; border-radius: 20px; font-weight: 900; font-size: 16px; border: 2px solid #f59e0b;">
+                    ✓ AUTHORIZED CITY RESIDENT
                   </div>
                 </div>
               </div>
-              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-                <div>
-                  <div style="margin-bottom: 16px;">
-                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Holder Name</p>
-                    <p style="font-size: 18px; font-weight: 600; margin: 0;">${user?.name || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Reference Number</p>
-                    <p style="font-size: 14px; font-weight: 500; font-family: monospace; margin: 0;">${application.reference_number}</p>
-                  </div>
-                </div>
-                <div style="text-align: center;">
-                  <div style="background: white; padding: 12px; border-radius: 8px; display: inline-block;">
-                    <div style="width: 100px; height: 100px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">QR Code</div>
-                  </div>
-                </div>
-              </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
-                <div>
-                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Issued</p>
-                  <p style="font-size: 14px; margin: 0;">${new Date(application.submitted_at).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p style="font-size: 12px; opacity: 0.8; margin: 0 0 4px 0;">Valid Until</p>
-                  <p style="font-size: 14px; margin: 0;">${new Date(new Date(application.submitted_at).setFullYear(new Date(application.submitted_at).getFullYear() + 1)).toLocaleDateString()}</p>
+
+              <!-- Right Side - QR Code -->
+              <div style="width: 256px; background: #fef3c7; border-left: 2px solid black; padding: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <p style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: black; margin: 0 0 12px 0; text-align: center;">Scan for Verification</p>
+                <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid black;">
+                  <img src="${cityPassQrDataUrl}" style="width: 160px; height: 160px; display: block;" alt="QR Code" />
                 </div>
               </div>
             </div>
-            <div style="text-align: center; padding: 16px;">
-              <div style="background: #dc2626; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: bold; font-size: 12px; margin-bottom: 8px;">
-                ✓ AUTHORIZED CITY RESIDENT
-              </div>
-              <p style="font-size: 12px; color: #666; margin: 8px 0 0 0;">This is an official digital identification card issued by the Government of Papua New Guinea</p>
-              <p style="font-size: 11px; color: #999; margin: 4px 0 0 0;">Digital verification available at gov.pg/verify</p>
+
+            <!-- Footer -->
+            <div style="position: relative; z-index: 10; padding: 12px 24px; background: #fef3c7; border-top: 2px solid black;">
+              <p style="font-size: 10px; color: black; text-align: center; margin: 0; font-weight: 700;">
+                This digital CITY RESIDENT PASS is valid for identification and city services access. Keep secure and report issues immediately to NCDC.
+              </p>
             </div>
           </div>
         `
@@ -258,22 +357,96 @@ export default function CardsPage() {
       
       tempDiv.appendChild(cardElement)
 
-      // Capture the element as canvas
-      const canvas = await html2canvas(cardElement)
+      // Wait for all images to load with enhanced handling
+      const images = cardElement.querySelectorAll('img')
+      console.log(`Found ${images.length} images to load`)
+      
+      const imagePromises = Array.from(images).map((img, index) => {
+        return new Promise((resolve) => {
+          console.log(`Loading image ${index + 1}: ${img.src.substring(0, 50)}...`)
+          
+          if (img.complete && img.naturalWidth > 0) {
+            console.log(`Image ${index + 1} already loaded`)
+            resolve(true)
+          } else {
+            img.onload = () => {
+              console.log(`Image ${index + 1} loaded successfully`)
+              resolve(true)
+            }
+            img.onerror = (error) => {
+              console.error(`Image ${index + 1} failed to load:`, error)
+              resolve(false)
+            }
+            // Longer timeout for QR codes
+            setTimeout(() => {
+              console.log(`Image ${index + 1} timed out`)
+              resolve(false)
+            }, 10000)
+          }
+        })
+      })
+      
+      const loadResults = await Promise.all(imagePromises)
+      console.log('Image loading results:', loadResults)
+      
+      // Extra wait time specifically for QR codes
+      if (application.service_name.toLowerCase().includes('public servant pass')) {
+        console.log('Adding extra wait time for Public Servant Pass QR code...')
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
 
-      // Convert to blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `${getCardTypeName(application.service_name)}_${application.reference_number}.png`
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          URL.revokeObjectURL(url)
+      // Capture the element as canvas with enhanced settings for QR codes
+      console.log('Starting canvas capture...')
+      const canvas = await html2canvas(cardElement, {
+        scale: 3, // Higher scale for better QR code quality
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: application.service_name.toLowerCase().includes('public servant pass') ? '#ffffff' : '#ffff00',
+        logging: true, // Enable logging for debugging
+        imageTimeout: 15000, // Longer timeout
+        removeContainer: true,
+        onclone: (clonedDoc) => {
+          // Ensure all QR code images are properly set in the cloned document
+          const clonedImages = clonedDoc.querySelectorAll('img')
+          console.log(`Found ${clonedImages.length} images in cloned document`)
+          clonedImages.forEach((img, index) => {
+            console.log(`Cloned image ${index + 1} src:`, img.src.substring(0, 50))
+          })
         }
-      }, 'image/png')
+      })
+      console.log('Canvas capture completed')
+
+      if (format === 'pdf') {
+        // Create PDF
+        const pdf = new jsPDF!({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        })
+
+        const imgData = canvas.toDataURL('image/png')
+        const imgWidth = 280
+        const imgHeight = (canvas.height * imgWidth) / canvas.width
+        
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight)
+        pdf.save(`city-resident-pass-${application.reference_number}.pdf`)
+      } else {
+        // Convert to PNG blob and download
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `city-resident-pass-${application.reference_number}.png`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+          }
+        }, 'image/png')
+      }
 
       // Cleanup
       document.body.removeChild(tempDiv)
@@ -518,11 +691,20 @@ export default function CardsPage() {
                     View Card
                   </button>
                   <button
-                    onClick={() => downloadCard(application)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                    title="Download Card"
+                    onClick={() => downloadCard(application, 'png')}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    title="Download PNG"
                   >
-                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                    PNG
+                  </button>
+                  <button
+                    onClick={() => downloadCard(application, 'pdf')}
+                    className="inline-flex items-center px-3 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors"
+                    title="Download PDF"
+                  >
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                    PDF
                   </button>
                   <button
                     onClick={() => deleteCard(application)}
@@ -590,137 +772,16 @@ export default function CardsPage() {
                 <div className="mb-6">
                   {selectedCard.service_name.toLowerCase().includes('public servant pass') ? (
                     /* Public Servant Pass Card */
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-5xl mx-auto overflow-hidden">
-                      {/* Header Section */}
-                      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-png-red to-red-600 text-white">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                          </div>
-                          <div>
-                            <h2 className="text-xl font-bold">Public Servant Pass</h2>
-                            <p className="text-sm opacity-90">Government Employee ID</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs opacity-90 mb-1">Reference Number</p>
-                          <p className="text-lg font-bold bg-white bg-opacity-20 px-3 py-1 rounded-md">
-                            {selectedCard.reference_number}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Main Content */}
-                      <div className="flex">
-                        {/* Left Side - Card Details */}
-                        <div className="flex-1 p-6 space-y-4">
-                          {/* Employee Information */}
-                          <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-png-red">
-                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Employee Name</p>
-                            <p className="text-2xl font-bold text-gray-900 break-words">
-                              {selectedCard.application_data?.personalInfo?.firstName} {selectedCard.application_data?.personalInfo?.lastName}
-                            </p>
-                          </div>
-
-                          {/* Employment Details */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Public Servant ID</p>
-                              <p className="text-lg font-bold text-blue-800 font-mono">
-                                {selectedCard.application_data?.employmentInfo?.publicServantId || 'N/A'}
-                              </p>
-                            </div>
-                            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                              <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Department</p>
-                              <p className="text-lg font-bold text-green-800">
-                                {selectedCard.application_data?.employmentInfo?.department || 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Dates and Status */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                              <div className="text-center">
-                                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Issued</p>
-                                <p className="text-sm font-bold text-green-800 mt-1">
-                                  {new Date(selectedCard.submitted_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: '2-digit'
-                                  })}
-                                </p>
-                                <p className="text-lg font-bold text-green-800">
-                                  {new Date(selectedCard.submitted_at).getFullYear()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                              <div className="text-center">
-                                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Expires</p>
-                                <p className="text-sm font-bold text-red-800 mt-1">
-                                  {new Date(new Date(selectedCard.submitted_at).setFullYear(new Date(selectedCard.submitted_at).getFullYear() + 1)).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: '2-digit'
-                                  })}
-                                </p>
-                                <p className="text-lg font-bold text-red-800">
-                                  {new Date(new Date(selectedCard.submitted_at).setFullYear(new Date(selectedCard.submitted_at).getFullYear() + 1)).getFullYear()}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Status Badge */}
-                          <div className="flex items-center justify-center">
-                            <div className="bg-png-red text-white px-6 py-3 rounded-full font-bold text-lg shadow-md">
-                              ✓ AUTHORIZED GOVERNMENT EMPLOYEE
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right Side - QR Code Section */}
-                        <div className="w-64 bg-gray-50 p-4 border-l border-gray-200">
-                          <div className="text-center h-full flex flex-col justify-between">
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                                Scan for Verification
-                              </p>
-                              <div className="bg-white p-2 rounded-lg border-2 border-gray-300 shadow-sm">
-                                <div className="w-40 h-40 mx-auto bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
-                                  <div className="w-full h-full bg-gray-50 rounded flex items-center justify-center">
-                                    <div className="text-center">
-                                      <div className="w-24 h-24 mx-auto mb-2 bg-gray-200 rounded grid grid-cols-8 gap-0.5 p-1">
-                                        {Array.from({ length: 64 }, (_, i) => (
-                                          <div key={i} className={`${Math.random() > 0.5 ? 'bg-gray-800' : 'bg-white'} rounded-sm`}></div>
-                                        ))}
-                                      </div>
-                                      <p className="text-xs text-gray-500 font-medium">QR Verification</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-4">
-                              <p className="text-xs text-gray-500 mb-2">Reference</p>
-                              <p className="text-sm font-mono font-bold text-gray-700 bg-white px-2 py-1 rounded">
-                                {selectedCard.reference_number}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                        <p className="text-xs text-gray-600 text-center leading-relaxed">
-                          This digital pass authorizes access to Papua New Guinea government systems and facilities. 
-                          Unauthorized use is prohibited.
-                        </p>
-                      </div>
-                    </div>
+                    <PublicServantPassCard
+                      userId={user?.id || ''}
+                      holderName={`${selectedCard.application_data?.personalInfo?.firstName || ''} ${selectedCard.application_data?.personalInfo?.lastName || ''}`.trim() || user?.name || 'N/A'}
+                      referenceNumber={selectedCard.reference_number}
+                      publicServantId={selectedCard.application_data?.employmentInfo?.publicServantId || 'N/A'}
+                      department={selectedCard.application_data?.employmentInfo?.department || 'N/A'}
+                      position={selectedCard.application_data?.employmentInfo?.position}
+                      vettedAt={selectedCard.submitted_at}
+                      approvedAt={selectedCard.updated_at}
+                    />
                   ) : (
                     /* City Pass or other cards */
                     <CityPassCard
@@ -752,12 +813,28 @@ export default function CardsPage() {
                       </>
                     )}
                   </button>
-                  <button
-                    onClick={() => setSelectedCard(null)}
-                    className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                  >
-                    Close
-                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => downloadCard(selectedCard, 'png')}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                      Download PNG
+                    </button>
+                    <button
+                      onClick={() => downloadCard(selectedCard, 'pdf')}
+                      className="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors"
+                    >
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </button>
+                    <button
+                      onClick={() => setSelectedCard(null)}
+                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -3,6 +3,14 @@ import { applicationService } from '@/lib/database'
 import { ApplicationLimitsService } from '@/lib/application-limits-service'
 import type { PublicServantPassFormData, EnhancedApplication } from '@/lib/database-types'
 
+// Generate reference number for Public Servant Pass
+function generatePublicServantPassReferenceNumber(): string {
+  const prefix = 'PSP'
+  const timestamp = Date.now().toString().slice(-6)
+  const random = Math.random().toString(36).substr(2, 4).toUpperCase()
+  return `${prefix}-${timestamp}-${random}`
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -80,6 +88,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Generate reference number
+    const referenceNumber = generatePublicServantPassReferenceNumber()
+
     // Create application with enhanced data structure
     const applicationData = {
       ...formData,
@@ -105,7 +116,8 @@ export async function POST(request: NextRequest) {
     const result = await applicationService.createApplication({
       user_id: userId,
       service_name: 'Public Servant Pass',
-      application_data: applicationData
+      application_data: applicationData,
+      reference_number: referenceNumber
     })
 
     if (result.error) {

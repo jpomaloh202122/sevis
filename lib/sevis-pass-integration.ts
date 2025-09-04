@@ -37,29 +37,30 @@ export async function initiateSevisPassAuth(config?: {
       return
     }
 
-    const baseUrl = 'https://sevispass.netlify.app'
-    const clientId = process.env.NEXT_PUBLIC_SEVIS_PASS_CLIENT_ID
+    // Use OIDC endpoints from environment variables
+    const authUrl = process.env.NEXT_PUBLIC_SEVIS_PASS_AUTH_URL || 'http://localhost:3000/api/oidc/auth'
+    const clientId = process.env.NEXT_PUBLIC_OIDC_CLIENT_ID || 'sevis-portal-client'
     
     if (!clientId) {
-      reject(new Error('SEVIS Pass client ID not configured'))
+      reject(new Error('OIDC client ID not configured'))
       return
     }
 
-    // Build OAuth-like authorization URL
+    // Build OIDC authorization URL
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
-      redirect_uri: config?.redirect_uri || `${window.location.origin}/auth/sevis-pass/callback`,
-      scope: config?.scope?.join(' ') || 'identity email profile government_services',
+      redirect_uri: config?.redirect_uri || process.env.NEXT_PUBLIC_OIDC_REDIRECT_URI || `${window.location.origin}/auth/callback`,
+      scope: config?.scope?.join(' ') || process.env.NEXT_PUBLIC_OIDC_SCOPE || 'openid profile email phone address',
       state: config?.state || generateRandomState(),
       prompt: 'consent'
     })
 
-    const authUrl = `${baseUrl}/auth/authorize?${params.toString()}`
+    const fullAuthUrl = `${authUrl}?${params.toString()}`
     
     // Open popup window for authentication
     const popup = window.open(
-      authUrl,
+      fullAuthUrl,
       'sevis-pass-auth',
       'width=500,height=600,scrollbars=yes,resizable=yes'
     )
@@ -69,9 +70,12 @@ export async function initiateSevisPassAuth(config?: {
       return
     }
 
+    // Extract origin from auth URL
+    const authOrigin = new URL(authUrl).origin
+
     // Listen for callback message
     const messageHandler = (event: MessageEvent) => {
-      if (event.origin !== baseUrl) {
+      if (event.origin !== authOrigin) {
         return
       }
 
@@ -199,13 +203,14 @@ export async function getSevisPassPermissions(token: string): Promise<string[]> 
 }
 
 /**
- * Direct SEVIS Pass API integration (if available)
+ * Direct SEVIS Pass API integration using OIDC provider
  */
 export async function callSevisPassAPI(endpoint: string, token: string, options?: RequestInit): Promise<any> {
-  const baseUrl = 'https://sevispass.netlify.app/api'
+  // Use OIDC issuer as base URL, fallback to localhost
+  const baseUrl = process.env.OIDC_ISSUER || 'http://localhost:3003'
   
   try {
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+    const response = await fetch(`${baseUrl}/api${endpoint}`, {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,

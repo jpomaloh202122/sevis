@@ -9,6 +9,7 @@ function generateReferenceNumber(serviceType: string): string {
   let prefix = 'APP'
   if (serviceType === 'learners-permit') prefix = 'LP'
   else if (serviceType === 'drivers-license') prefix = 'DL'
+  else if (serviceType === 'Public Servant Pass') prefix = 'PSP'
   
   const timestamp = Date.now().toString().slice(-6)
   const random = Math.random().toString(36).substr(2, 4).toUpperCase()

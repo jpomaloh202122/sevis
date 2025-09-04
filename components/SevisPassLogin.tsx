@@ -29,41 +29,39 @@ export default function SevisPassLogin({
     setError('')
 
     try {
-      // Step 1: Initiate SEVIS Pass authentication
-      const authCode = await initiateSevisPassAuth({
-        scope: ['identity', 'email', 'profile', 'government_services'],
-        redirect_uri: `${window.location.origin}/auth/sevis-pass/callback`
+      // Direct redirect approach - more reliable than popup
+      const authUrl = process.env.NEXT_PUBLIC_SEVIS_PASS_AUTH_URL || 'http://localhost:3000/api/oidc/auth'
+      const clientId = process.env.NEXT_PUBLIC_OIDC_CLIENT_ID || 'sevis-portal-client'
+      const redirectUri = process.env.NEXT_PUBLIC_OIDC_REDIRECT_URI || `${window.location.origin}/auth/callback`
+      const scope = process.env.NEXT_PUBLIC_OIDC_SCOPE || 'openid profile email phone address'
+      
+      console.log('SEVIS Pass Login Config:', {
+        authUrl,
+        clientId,
+        redirectUri,
+        scope
       })
 
-      // Step 2: Exchange code for user data
-      const authResult = await exchangeSevisPassCode(authCode)
+      // Build authorization URL
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        scope: scope,
+        state: Math.random().toString(36).substr(2, 9),
+        prompt: 'consent'
+      })
 
-      if (!authResult.success) {
-        throw new Error(authResult.error || 'Authentication failed')
-      }
-
-      // Step 3: Login with user data
-      if (authResult.user) {
-        await loginWithUser(authResult.user)
-        
-        // Success callback
-        onSuccess?.()
-        
-        // Redirect based on user role
-        if (authResult.user.role === 'admin') {
-          router.push('/admin')
-        } else {
-          router.push('/dashboard')
-        }
-      } else {
-        throw new Error('No user data received from SEVIS Pass')
-      }
+      const fullAuthUrl = `${authUrl}?${params.toString()}`
+      console.log('Redirecting to:', fullAuthUrl)
+      
+      // Redirect to SEVIS Pass for authentication
+      window.location.href = fullAuthUrl
 
     } catch (err: any) {
       const errorMessage = err.message || 'SEVIS Pass authentication failed'
       setError(errorMessage)
       onError?.(errorMessage)
-    } finally {
       setIsLoading(false)
     }
   }

@@ -149,23 +149,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Exchange authorization code for access token with SEVIS Pass API
+// Exchange authorization code for access token with OIDC provider
 async function exchangeCodeForToken(code: string, state?: string) {
   try {
-    const tokenEndpoint = 'https://sevispass.netlify.app/api/oauth/token'
+    // Use OIDC token endpoint from environment variables
+    const tokenEndpoint = process.env.SEVIS_PASS_TOKEN_URL || 'http://localhost:3003/api/oidc/token'
     
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${Buffer.from(
-          `${process.env.SEVIS_PASS_CLIENT_ID}:${process.env.SEVIS_PASS_CLIENT_SECRET}`
+          `${process.env.OIDC_CLIENT_ID || process.env.SEVIS_PASS_CLIENT_ID}:${process.env.OIDC_CLIENT_SECRET || process.env.SEVIS_PASS_CLIENT_SECRET}`
         ).toString('base64')}`
       },
       body: JSON.stringify({
         grant_type: 'authorization_code',
         code,
-        redirect_uri: process.env.SEVIS_PASS_REDIRECT_URI,
+        redirect_uri: process.env.OIDC_REDIRECT_URI || process.env.SEVIS_PASS_REDIRECT_URI,
         state
       })
     })
@@ -207,10 +208,11 @@ async function exchangeCodeForToken(code: string, state?: string) {
   }
 }
 
-// Get user information from SEVIS Pass API
+// Get user information from OIDC provider
 async function getSevisPassUserInfo(accessToken: string) {
   try {
-    const userInfoEndpoint = 'https://sevispass.netlify.app/api/user/me'
+    // Use OIDC userinfo endpoint from environment variables
+    const userInfoEndpoint = process.env.SEVIS_PASS_USERINFO_URL || 'http://localhost:3003/api/oidc/me'
     
     const response = await fetch(userInfoEndpoint, {
       headers: {

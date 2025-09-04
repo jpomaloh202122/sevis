@@ -31,9 +31,11 @@
     "dotenv": "^17.2.1",
     "framer-motion": "^10.16.16",
     "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.2",
     "lucide-react": "^0.294.0",
     "next": "^14.2.31",
     "nodemailer": "^7.0.5",
+    "oidc-provider": "^9.5.1",
     "postcss": "^8",
     "qrcode": "^1.5.4",
     "react": "^18",
@@ -46,6 +48,7 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.2.0",
+    "@types/oidc-provider": "^9.5.0",
     "@types/qrcode": "^1.5.5",
     "eslint": "^8",
     "eslint-config-next": "14.0.4"
